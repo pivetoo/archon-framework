@@ -1,9 +1,9 @@
-using Archon.Infrastructure.IdentityManagement;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Archon.Infrastructure.IdentityManagement;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Options;
 
 namespace Archon.Api.Security.Authentication
 {
@@ -20,56 +20,34 @@ namespace Archon.Api.Security.Authentication
 
         public async Task<ClaimsPrincipal?> ValidateTokenAsync(string token, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(token))
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+            JwtSecurityToken jwtSecurityToken = tokenHandler.ReadJwtToken(token);
+
+            string? clientId = jwtSecurityToken.Claims.FirstOrDefault(claim => claim.Type == "client_id")?.Value;
+            if (string.IsNullOrWhiteSpace(clientId))
             {
-                throw new SecurityTokenException("Token is null or empty.");
+                return null;
             }
 
-            try
+            IdentityManagementApplicationInfo? application = await identityManagementClient.GetApplicationAsync(clientId, cancellationToken);
+            if (application is null || string.IsNullOrWhiteSpace(application.Secret))
             {
-                JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler
-                {
-                    MapInboundClaims = false
-                };
-
-                JwtSecurityToken jsonToken = tokenHandler.ReadJwtToken(token);
-                string? clientId = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "client_id")?.Value;
-                if (string.IsNullOrWhiteSpace(clientId))
-                {
-                    throw new SecurityTokenException("Token does not contain client_id.");
-                }
-
-                IdentityManagementApplicationInfo? application = await identityManagementClient.GetApplicationByClientIdAsync(clientId, cancellationToken);
-                if (application is null || !application.IsActive)
-                {
-                    throw new SecurityTokenException($"Application with client_id '{clientId}' was not found or is inactive.");
-                }
-
-                TokenValidationParameters validationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(application.JwtSecretKey)),
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtOptions.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = jwtOptions.Audience,
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.FromMinutes(5),
-                    RequireExpirationTime = true,
-                    RequireSignedTokens = true
-                };
-
-                ClaimsPrincipal principal = tokenHandler.ValidateToken(token, validationParameters, out _);
-                return principal;
+                return null;
             }
-            catch (SecurityTokenException)
+
+            TokenValidationParameters validationParameters = new TokenValidationParameters
             {
-                throw;
-            }
-            catch (Exception exception)
-            {
-                throw new SecurityTokenException($"Token validation failed: {exception.Message}", exception);
-            }
+                ValidateIssuer = !string.IsNullOrWhiteSpace(jwtOptions.Issuer),
+                ValidIssuer = jwtOptions.Issuer,
+                ValidateAudience = !string.IsNullOrWhiteSpace(jwtOptions.Audience),
+                ValidAudience = jwtOptions.Audience,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(application.Secret)),
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromMinutes(1)
+            };
+
+            return tokenHandler.ValidateToken(token, validationParameters, out _);
         }
     }
 }

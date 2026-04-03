@@ -1,5 +1,5 @@
-using Archon.Api.Security;
 using Archon.Api.ExceptionHandling;
+using Archon.Api.Security;
 using Microsoft.AspNetCore.Builder;
 
 namespace Archon.Api.MultiTenancy
