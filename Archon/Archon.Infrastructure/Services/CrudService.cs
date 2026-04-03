@@ -37,17 +37,17 @@ namespace Archon.Infrastructure.Services
             return ValidateEntity(entity);
         }
 
-        public virtual bool ExecuteInTransaction(Action operation)
+        public virtual async Task<bool> ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
         {
             try
             {
                 IExecutionStrategy executionStrategy = DbContext.Database.CreateExecutionStrategy();
-                executionStrategy.Execute(() =>
+                await executionStrategy.ExecuteAsync(async () =>
                 {
-                    using IDbContextTransaction transaction = DbContext.Database.BeginTransaction();
-                    operation();
-                    DbContext.SaveChanges();
-                    transaction.Commit();
+                    await using IDbContextTransaction transaction = await DbContext.Database.BeginTransactionAsync(cancellationToken);
+                    await operation();
+                    await DbContext.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
                 });
 
                 return true;
@@ -68,7 +68,7 @@ namespace Archon.Infrastructure.Services
             }
         }
 
-        public virtual bool Insert(params T[] entities)
+        public virtual async Task<bool> InsertAsync(CancellationToken cancellationToken = default, params T[] entities)
         {
             messages.Clear();
 
@@ -97,13 +97,14 @@ namespace Archon.Infrastructure.Services
                 entity.SetCreatedAt(now);
             }
 
-            return ExecuteInTransaction(() =>
+            return await ExecuteInTransactionAsync(async () =>
             {
                 DbContext.Set<T>().AddRange(entities);
-            });
+                await Task.CompletedTask;
+            }, cancellationToken);
         }
 
-        public virtual T? Update(T entity)
+        public virtual async Task<T?> UpdateAsync(T entity, CancellationToken cancellationToken = default)
         {
             messages.Clear();
 
@@ -112,9 +113,9 @@ namespace Archon.Infrastructure.Services
                 return null;
             }
 
-            T? existingEntity = DbContext.Set<T>()
+            T? existingEntity = await DbContext.Set<T>()
                 .AsNoTracking()
-                .FirstOrDefault(current => current.Id == entity.Id);
+                .FirstOrDefaultAsync(current => current.Id == entity.Id, cancellationToken);
 
             if (existingEntity is null)
             {
@@ -122,9 +123,12 @@ namespace Archon.Infrastructure.Services
                 return null;
             }
 
-            return ExecuteInTransaction(() =>
+            return await ExecuteInTransactionAsync(async () =>
             {
-                T? currentEntity = DbContext.Set<T>().AsTracking().FirstOrDefault(current => current.Id == entity.Id);
+                T? currentEntity = await DbContext.Set<T>()
+                    .AsTracking()
+                    .FirstOrDefaultAsync(current => current.Id == entity.Id, cancellationToken);
+
                 if (currentEntity is null)
                 {
                     throw new KeyNotFoundException("Record not found.");
@@ -137,23 +141,26 @@ namespace Archon.Infrastructure.Services
                 currentEntity.SetUpdatedAt(updatedAt);
                 entity.SetCreatedAt(createdAt);
                 entity.SetUpdatedAt(updatedAt);
-            }) ? entity : null;
+            }, cancellationToken) ? entity : null;
         }
 
-        public virtual T? Delete(long id)
+        public virtual async Task<T?> DeleteAsync(long id, CancellationToken cancellationToken = default)
         {
             messages.Clear();
-            T? entity = DbContext.Set<T>().AsNoTracking().FirstOrDefault(current => current.Id == id);
+            T? entity = await DbContext.Set<T>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(current => current.Id == id, cancellationToken);
+
             if (entity is null)
             {
                 messages.Add(new KeyNotFoundException("Record not found."));
                 return null;
             }
 
-            return Delete(entity) ? entity : null;
+            return await DeleteAsync([entity], cancellationToken) ? entity : null;
         }
 
-        public virtual bool Delete(params T[] entities)
+        public virtual async Task<bool> DeleteAsync(T[] entities, CancellationToken cancellationToken = default)
         {
             messages.Clear();
 
@@ -162,10 +169,11 @@ namespace Archon.Infrastructure.Services
                 return true;
             }
 
-            return ExecuteInTransaction(() =>
+            return await ExecuteInTransactionAsync(async () =>
             {
                 DbContext.Set<T>().RemoveRange(entities);
-            });
+                await Task.CompletedTask;
+            }, cancellationToken);
         }
 
         protected virtual bool ValidateEntity(T entity)

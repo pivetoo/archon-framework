@@ -15,7 +15,7 @@ namespace Archon.Api.Controllers
         }
 
         [PostEndpoint]
-        public virtual IActionResult Post([FromBody] T entity)
+        public virtual async Task<IActionResult> Post([FromBody] T entity, CancellationToken cancellationToken)
         {
             IActionResult? validationResult = ValidateBody(entity);
             if (validationResult is not null)
@@ -23,7 +23,7 @@ namespace Archon.Api.Controllers
                 return validationResult;
             }
 
-            bool success = Service.Insert(entity);
+            bool success = await Service.InsertAsync(cancellationToken, entity);
             if (!success)
             {
                 return Http422(Service.Messages);
@@ -33,7 +33,7 @@ namespace Archon.Api.Controllers
         }
 
         [PutEndpoint]
-        public virtual IActionResult Put([FromBody] T entity)
+        public virtual async Task<IActionResult> Put([FromBody] T entity, CancellationToken cancellationToken)
         {
             IActionResult? validationResult = ValidateBody(entity);
             if (validationResult is not null)
@@ -41,7 +41,7 @@ namespace Archon.Api.Controllers
                 return validationResult;
             }
 
-            T? result = Service.Update(entity);
+            T? result = await Service.UpdateAsync(entity, cancellationToken);
             if (result is null)
             {
                 return ResolveServiceError();
@@ -51,9 +51,9 @@ namespace Archon.Api.Controllers
         }
 
         [DeleteEndpoint("{id:long}")]
-        public virtual IActionResult Delete(long id)
+        public virtual async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
         {
-            T? result = Service.Delete(id);
+            T? result = await Service.DeleteAsync(id, cancellationToken);
             if (result is null)
             {
                 return ResolveServiceError();
