@@ -29,7 +29,7 @@ namespace Archon.Api.Controllers
                 return Http422(Service.Messages);
             }
 
-            return Http201(entity);
+            return Http201(entity, "Record created successfully.");
         }
 
         [PutEndpoint]
@@ -44,10 +44,10 @@ namespace Archon.Api.Controllers
             T? result = Service.Update(entity);
             if (result is null)
             {
-                return Http422(Service.Messages);
+                return ResolveServiceError();
             }
 
-            return Http200(result);
+            return Http200(result, "Record updated successfully.");
         }
 
         [DeleteEndpoint("{id:long}")]
@@ -56,10 +56,20 @@ namespace Archon.Api.Controllers
             T? result = Service.Delete(id);
             if (result is null)
             {
-                return Http422(Service.Messages);
+                return ResolveServiceError();
             }
 
-            return Http200(result);
+            return Http200(result, "Record deleted successfully.");
+        }
+
+        protected virtual IActionResult ResolveServiceError()
+        {
+            if (Service.Messages.Any(message => message is KeyNotFoundException))
+            {
+                return Http404("Record not found.", NormalizeExceptions(Service.Messages));
+            }
+
+            return Http422(Service.Messages);
         }
     }
 }

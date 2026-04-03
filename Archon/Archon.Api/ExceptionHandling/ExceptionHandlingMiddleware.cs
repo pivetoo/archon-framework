@@ -48,6 +48,7 @@ namespace Archon.Api.ExceptionHandling
         private static Task WriteErrorAsync(HttpContext context, int statusCode, string message)
         {
             context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/json";
             return context.Response.WriteAsJsonAsync(new ApiResponse
             {
                 Message = message

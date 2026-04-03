@@ -1,4 +1,5 @@
 using Archon.Application.Abstractions;
+using Archon.Core.Responses;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -27,9 +28,10 @@ namespace Archon.Api.Security
                         if (!isValid)
                         {
                             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                            await context.Response.WriteAsJsonAsync(new
+                            context.Response.ContentType = "application/json";
+                            await context.Response.WriteAsJsonAsync(new ApiResponse
                             {
-                                message = "Invalid or expired session."
+                                Message = "Invalid or expired session."
                             });
                             return;
                         }

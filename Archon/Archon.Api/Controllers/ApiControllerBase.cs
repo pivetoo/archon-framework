@@ -3,6 +3,7 @@ using Archon.Core.Pagination;
 using Archon.Core.Responses;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Archon.Api.Controllers
@@ -30,7 +31,7 @@ namespace Archon.Api.Controllers
 
             if (!ModelState.IsValid)
             {
-                return Http400("Validation failed.", ModelState);
+                return Http400("Validation failed.", NormalizeModelStateErrors(ModelState));
             }
 
             return null;
@@ -96,6 +97,11 @@ namespace Archon.Api.Controllers
             return StatusCode(StatusCodes.Status422UnprocessableEntity, CreateResponse(message ?? "Validation failed.", errors: errors));
         }
 
+        protected IActionResult Http422(IReadOnlyCollection<Exception> errors, string? message = null)
+        {
+            return Http422(NormalizeExceptions(errors), message);
+        }
+
         protected IActionResult Http500(string message, object? errors = null)
         {
             return StatusCode(StatusCodes.Status500InternalServerError, CreateResponse(message, errors: errors));
@@ -145,6 +151,25 @@ namespace Archon.Api.Controllers
                 Errors = errors,
                 Pagination = pagination
             };
+        }
+
+        private static Dictionary<string, IReadOnlyCollection<string>> NormalizeModelStateErrors(ModelStateDictionary modelState)
+        {
+            return modelState
+                .Where(item => item.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    item => item.Key,
+                    item => (IReadOnlyCollection<string>)item.Value!.Errors
+                        .Select(error => string.IsNullOrWhiteSpace(error.ErrorMessage) ? "Invalid value." : error.ErrorMessage)
+                        .ToList());
+        }
+
+        protected static IReadOnlyCollection<string> NormalizeExceptions(IReadOnlyCollection<Exception> errors)
+        {
+            return errors
+                .Select(error => string.IsNullOrWhiteSpace(error.Message) ? "Unexpected error." : error.Message)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
         }
     }
 }
