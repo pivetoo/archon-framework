@@ -21,6 +21,8 @@ namespace Archon.Infrastructure.Services
 
         public IReadOnlyCollection<Exception> Messages => messages.AsReadOnly();
 
+        protected ICollection<Exception> MutableMessages => messages;
+
         public virtual bool CustomValidate(T entity)
         {
             return true;
