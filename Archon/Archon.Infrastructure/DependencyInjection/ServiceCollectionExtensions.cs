@@ -1,12 +1,14 @@
 using Archon.Application.MultiTenancy;
 using Archon.Application.Persistence;
 using Archon.Core.ValueObjects;
+using Archon.Infrastructure.IdentityManagement;
 using Archon.Infrastructure.MultiTenancy;
 using Archon.Infrastructure.Persistence.Dapper;
 using Archon.Infrastructure.Persistence.EF;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System.Reflection;
 
 namespace Archon.Infrastructure.DependencyInjection
@@ -46,6 +48,21 @@ namespace Archon.Infrastructure.DependencyInjection
 
             services.AddScoped<DbContext>(provider => provider.GetRequiredService<ArchonDbContext>());
             services.AddScoped<ISqlConnectionFactory, TenantSqlConnectionFactory>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddArchonIdentityManagement(this IServiceCollection services, IConfiguration configuration)
+        {
+            IdentityManagementOptions identityManagementOptions = new IdentityManagementOptions();
+            configuration.GetSection("IdentityManagement").Bind(identityManagementOptions);
+
+            JwtOptions jwtOptions = new JwtOptions();
+            configuration.GetSection("Jwt").Bind(jwtOptions);
+
+            services.AddSingleton(Options.Create(identityManagementOptions));
+            services.AddSingleton(Options.Create(jwtOptions));
+            services.AddHttpClient<IdentityManagementClient>();
 
             return services;
         }
