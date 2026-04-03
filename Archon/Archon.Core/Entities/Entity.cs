@@ -1,61 +1,62 @@
-namespace Archon.Core.Entities;
-
-public abstract class Entity
+namespace Archon.Core.Entities
 {
-    public long Id { get; protected set; }
-
-    public DateTimeOffset CreatedAt { get; protected set; }
-
-    public DateTimeOffset? UpdatedAt { get; protected set; }
-
-    public void SetCreatedAt(DateTimeOffset createdAt)
+    public abstract class Entity
     {
-        CreatedAt = createdAt;
-        UpdatedAt = createdAt;
-    }
+        public long Id { get; protected set; }
 
-    public void SetUpdatedAt(DateTimeOffset updatedAt)
-    {
-        UpdatedAt = updatedAt;
-    }
+        public DateTimeOffset CreatedAt { get; protected set; }
 
-    public override bool Equals(object? obj)
-    {
-        if (obj is not Entity other)
+        public DateTimeOffset? UpdatedAt { get; protected set; }
+
+        public void SetCreatedAt(DateTimeOffset createdAt)
         {
-            return false;
+            CreatedAt = createdAt;
+            UpdatedAt = createdAt;
         }
 
-        if (ReferenceEquals(this, other))
+        public void SetUpdatedAt(DateTimeOffset updatedAt)
         {
-            return true;
+            UpdatedAt = updatedAt;
         }
 
-        if (GetType() != other.GetType())
+        public override bool Equals(object? obj)
         {
-            return false;
+            if (obj is not Entity other)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            if (GetType() != other.GetType())
+            {
+                return false;
+            }
+
+            if (Id == default || other.Id == default)
+            {
+                return false;
+            }
+
+            return Id == other.Id;
         }
 
-        if (Id == default || other.Id == default)
+        public override int GetHashCode()
         {
-            return false;
+            return HashCode.Combine(GetType(), Id);
         }
 
-        return Id == other.Id;
-    }
+        public static bool operator ==(Entity? left, Entity? right)
+        {
+            return Equals(left, right);
+        }
 
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(GetType(), Id);
-    }
-
-    public static bool operator ==(Entity? left, Entity? right)
-    {
-        return Equals(left, right);
-    }
-
-    public static bool operator !=(Entity? left, Entity? right)
-    {
-        return !Equals(left, right);
+        public static bool operator !=(Entity? left, Entity? right)
+        {
+            return !Equals(left, right);
+        }
     }
 }

@@ -1,8 +1,9 @@
-namespace Archon.Core.ValueObjects;
-
-public enum AuditAction
+namespace Archon.Core.ValueObjects
 {
-    Insert = 1,
-    Update = 2,
-    Delete = 3
+    public enum AuditAction
+    {
+        Insert = 1,
+        Update = 2,
+        Delete = 3
+    }
 }
