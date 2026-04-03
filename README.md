@@ -17,7 +17,7 @@ O núcleo da solução fica em [`Archon/Archon.slnx`](/mnt/c/development/web-pro
 - `Archon.Testing`
   Contém a base de testes do framework, com separação entre `Unit` e `Integration`.
 
-## O que já existe
+## Funcionalidades
 
 - Multi-tenant por resolução de tenant e connection string.
 - Persistência híbrida com `EF Core` e `Dapper`.
