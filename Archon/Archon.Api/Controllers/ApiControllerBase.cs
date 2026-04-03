@@ -1,4 +1,6 @@
 using Archon.Application.Abstractions;
+using Archon.Core.Pagination;
+using Archon.Core.Responses;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,82 +25,87 @@ namespace Archon.Api.Controllers
         {
             if (body is null)
             {
-                return Http400(new { message = "Request body is required." });
+                return Http400("Request body is required.");
             }
 
             if (!ModelState.IsValid)
             {
-                return Http400(ModelState);
+                return Http400("Validation failed.", ModelState);
             }
 
             return null;
         }
 
-        protected IActionResult Http200(object? data = null)
+        protected IActionResult Http200(object? data = null, string? message = null)
         {
-            return data is null ? Ok() : Ok(data);
+            return StatusCode(StatusCodes.Status200OK, CreateResponse(message, data));
         }
 
-        protected IActionResult Http201(object? data = null)
+        protected IActionResult Http200<T>(PagedResult<T> pagedResult, string? message = null)
         {
-            return StatusCode(StatusCodes.Status201Created, data);
+            return StatusCode(StatusCodes.Status200OK, CreateResponse(message, pagedResult.Items, pagination: pagedResult.Pagination));
         }
 
-        protected IActionResult Http202(object? data = null)
+        protected IActionResult Http201(object? data = null, string? message = null)
         {
-            return StatusCode(StatusCodes.Status202Accepted, data);
+            return StatusCode(StatusCodes.Status201Created, CreateResponse(message, data));
+        }
+
+        protected IActionResult Http202(object? data = null, string? message = null)
+        {
+            return StatusCode(StatusCodes.Status202Accepted, CreateResponse(message, data));
         }
 
         protected IActionResult Http204()
         {
-            return NoContent();
+            return StatusCode(StatusCodes.Status200OK, CreateResponse("Operation completed successfully."));
         }
 
-        protected IActionResult Http400(object error)
+        protected IActionResult Http400(string message, object? errors = null)
         {
-            return BadRequest(error);
+            return StatusCode(StatusCodes.Status400BadRequest, CreateResponse(message, errors: errors));
         }
 
-        protected IActionResult Http401(object? error = null)
+        protected IActionResult Http401(string? message = null, object? errors = null)
         {
-            return error is null ? Unauthorized() : Unauthorized(error);
+            return StatusCode(StatusCodes.Status401Unauthorized, CreateResponse(message ?? "Unauthorized.", errors: errors));
         }
 
-        protected IActionResult Http403(object? error = null)
+        protected IActionResult Http403(string? message = null, object? errors = null)
         {
-            return StatusCode(StatusCodes.Status403Forbidden, error);
+            return StatusCode(StatusCodes.Status403Forbidden, CreateResponse(message ?? "Forbidden.", errors: errors));
         }
 
-        protected IActionResult Http404(object? error = null)
+        protected IActionResult Http404(string? message = null, object? errors = null)
         {
-            return error is null ? NotFound() : NotFound(error);
+            return StatusCode(StatusCodes.Status404NotFound, CreateResponse(message ?? "Resource not found.", errors: errors));
         }
 
-        protected IActionResult Http409(object error)
+        protected IActionResult Http409(string message, object? errors = null)
         {
-            return Conflict(error);
+            return StatusCode(StatusCodes.Status409Conflict, CreateResponse(message, errors: errors));
         }
 
-        protected IActionResult Http412(object error)
+        protected IActionResult Http412(string message, object? errors = null)
         {
-            return StatusCode(StatusCodes.Status412PreconditionFailed, error);
+            return StatusCode(StatusCodes.Status412PreconditionFailed, CreateResponse(message, errors: errors));
         }
 
-        protected IActionResult Http422(object error)
+        protected IActionResult Http422(object errors, string? message = null)
         {
-            return UnprocessableEntity(error);
+            return StatusCode(StatusCodes.Status422UnprocessableEntity, CreateResponse(message ?? "Validation failed.", errors: errors));
         }
 
-        protected IActionResult Http500(object error)
+        protected IActionResult Http500(string message, object? errors = null)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, error);
+            return StatusCode(StatusCodes.Status500InternalServerError, CreateResponse(message, errors: errors));
         }
 
         protected IActionResult SendFile(byte[] content, string contentType, string fileName)
         {
             if (content.Length == 0)
             {
-                return Http400(new { message = "File content is required." });
+                return Http400("File content is required.");
             }
 
             return File(content, contentType, fileName);
@@ -108,7 +115,7 @@ namespace Archon.Api.Controllers
         {
             if (content.Length == 0)
             {
-                return Http400(new { message = "File content is required." });
+                return Http400("File content is required.");
             }
 
             return File(content, contentType, fileName);
@@ -127,6 +134,17 @@ namespace Archon.Api.Controllers
         protected IActionResult SendCsv(byte[] content, string fileName)
         {
             return SendFile(content, "text/csv", fileName);
+        }
+
+        private static ApiResponse CreateResponse(string? message = null, object? data = null, object? errors = null, object? pagination = null)
+        {
+            return new ApiResponse
+            {
+                Message = message ?? string.Empty,
+                Data = data,
+                Errors = errors,
+                Pagination = pagination
+            };
         }
     }
 }

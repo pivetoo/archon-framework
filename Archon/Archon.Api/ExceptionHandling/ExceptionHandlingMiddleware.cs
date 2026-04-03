@@ -1,4 +1,5 @@
 using Archon.Core.Exceptions;
+using Archon.Core.Responses;
 using Microsoft.AspNetCore.Http;
 
 namespace Archon.Api.ExceptionHandling
@@ -47,9 +48,9 @@ namespace Archon.Api.ExceptionHandling
         private static Task WriteErrorAsync(HttpContext context, int statusCode, string message)
         {
             context.Response.StatusCode = statusCode;
-            return context.Response.WriteAsJsonAsync(new
+            return context.Response.WriteAsJsonAsync(new ApiResponse
             {
-                message
+                Message = message
             });
         }
     }
