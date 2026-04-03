@@ -12,6 +12,10 @@ namespace Archon.Core.Entities
 
         public string? NewValue { get; private set; }
 
+        private AuditPropertyChange()
+        {
+        }
+
         public AuditPropertyChange(AuditEntry auditEntry, string propertyName, string? oldValue, string? newValue)
         {
             if (auditEntry is null)
@@ -28,6 +32,7 @@ namespace Archon.Core.Entities
             PropertyName = propertyName.Trim();
             OldValue = oldValue;
             NewValue = newValue;
+            SetCreatedAt(auditEntry.ChangedAt);
         }
     }
 }

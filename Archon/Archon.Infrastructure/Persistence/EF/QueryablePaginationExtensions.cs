@@ -32,5 +32,18 @@ namespace Archon.Infrastructure.Persistence.EF
                 }
             };
         }
+
+        public static async Task<PagedResult<TResult>> ToPagedResultAsync<TSource, TResult>(this IQueryable<TSource> query, PagedRequest request, Func<TSource, TResult> selector, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(selector);
+
+            PagedResult<TSource> pagedResult = await query.ToPagedResultAsync(request, cancellationToken);
+
+            return new PagedResult<TResult>
+            {
+                Items = pagedResult.Items.Select(selector).ToList(),
+                Pagination = pagedResult.Pagination
+            };
+        }
     }
 }

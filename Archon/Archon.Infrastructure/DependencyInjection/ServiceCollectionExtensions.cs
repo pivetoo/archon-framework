@@ -1,3 +1,4 @@
+using Archon.Application.Abstractions;
 using Archon.Application.MultiTenancy;
 using Archon.Application.Persistence;
 using Archon.Application.Services;
@@ -42,15 +43,18 @@ namespace Archon.Infrastructure.DependencyInjection
             {
                 ITenantContext tenantContext = provider.GetRequiredService<ITenantContext>();
                 ModelAssemblyRegistry modelAssemblyRegistry = provider.GetRequiredService<ModelAssemblyRegistry>();
+                ICurrentUser? currentUser = provider.GetService<ICurrentUser>();
 
                 (string connectionString, DatabaseProvider databaseProvider, string? schema) = ResolveCurrentTenant(tenantContext, tenantDatabaseOptions);
                 DbContextOptions<ArchonDbContext> options = DbContextOptionsFactory.Create(connectionString, databaseProvider);
 
-                return new ArchonDbContext(options, modelAssemblyRegistry, schema);
+                return new ArchonDbContext(options, modelAssemblyRegistry, currentUser, tenantContext, schema);
             });
 
             services.AddScoped<DbContext>(provider => provider.GetRequiredService<ArchonDbContext>());
             services.AddScoped<ISqlConnectionFactory, TenantSqlConnectionFactory>();
+            services.AddScoped<IAuditService, AuditService>();
+            services.AddScoped<AuditService>();
             services.AddScoped(typeof(ICrudService<>), typeof(CrudService<>));
             services.AddScoped(typeof(CrudService<>));
 

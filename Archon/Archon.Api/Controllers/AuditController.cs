@@ -1,0 +1,48 @@
+using Archon.Api.Attributes;
+using Archon.Application.Services;
+using Archon.Core.Pagination;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Archon.Api.Controllers
+{
+    public sealed class AuditController : ApiControllerBase
+    {
+        private readonly IAuditService auditService;
+
+        public AuditController(IAuditService auditService)
+        {
+            this.auditService = auditService;
+        }
+
+        [RequireAccess]
+        [GetEndpoint("entity/{entityName}/{entityId}")]
+        public async Task<IActionResult> GetByEntity(string entityName, string entityId, [FromQuery] PagedRequest request, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(entityName))
+            {
+                return Http400("Entity name is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(entityId))
+            {
+                return Http400("Entity id is required.");
+            }
+
+            var result = await auditService.GetByEntityAsync(entityName, entityId, request, cancellationToken);
+            return Http200(result);
+        }
+
+        [RequireAccess]
+        [GetEndpoint("{auditEntryId:long}")]
+        public async Task<IActionResult> GetById(long auditEntryId, CancellationToken cancellationToken)
+        {
+            if (auditEntryId <= 0)
+            {
+                return Http400("Audit entry id is required.");
+            }
+
+            var result = await auditService.GetByIdAsync(auditEntryId, cancellationToken);
+            return result is null ? Http404("Audit entry not found.") : Http200(result);
+        }
+    }
+}
