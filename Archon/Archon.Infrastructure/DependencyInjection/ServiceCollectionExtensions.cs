@@ -1,10 +1,12 @@
 using Archon.Application.MultiTenancy;
 using Archon.Application.Persistence;
+using Archon.Application.Services;
 using Archon.Core.ValueObjects;
 using Archon.Infrastructure.IdentityManagement;
 using Archon.Infrastructure.MultiTenancy;
 using Archon.Infrastructure.Persistence.Dapper;
 using Archon.Infrastructure.Persistence.EF;
+using Archon.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,6 +50,8 @@ namespace Archon.Infrastructure.DependencyInjection
 
             services.AddScoped<DbContext>(provider => provider.GetRequiredService<ArchonDbContext>());
             services.AddScoped<ISqlConnectionFactory, TenantSqlConnectionFactory>();
+            services.AddScoped(typeof(ICrudService<>), typeof(CrudService<>));
+            services.AddScoped(typeof(CrudService<>));
 
             return services;
         }
