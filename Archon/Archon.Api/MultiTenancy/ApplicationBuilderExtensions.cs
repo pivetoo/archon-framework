@@ -17,5 +17,10 @@ namespace Archon.Api.MultiTenancy
         {
             return app.UseMiddleware<SessionValidationMiddleware>();
         }
+
+        public static IApplicationBuilder UseIdentityManagementUserSync(this IApplicationBuilder app)
+        {
+            return app.UseMiddleware<IdentityManagementUserSyncMiddleware>();
+        }
     }
 }
