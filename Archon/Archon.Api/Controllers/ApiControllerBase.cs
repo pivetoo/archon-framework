@@ -1,10 +1,8 @@
 using Archon.Application.Abstractions;
 using Archon.Core.Pagination;
 using Archon.Core.Responses;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Archon.Api.Controllers
 {

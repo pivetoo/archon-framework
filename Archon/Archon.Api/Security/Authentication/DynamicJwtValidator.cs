@@ -1,9 +1,9 @@
+using Archon.Infrastructure.IdentityManagement;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Archon.Infrastructure.IdentityManagement;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.Extensions.Options;
 
 namespace Archon.Api.Security.Authentication
 {
@@ -29,8 +29,8 @@ namespace Archon.Api.Security.Authentication
                 return null;
             }
 
-            IdentityManagementApplicationInfo? application = await identityManagementClient.GetApplicationAsync(clientId, cancellationToken);
-            if (application is null || string.IsNullOrWhiteSpace(application.Secret))
+            IdentityManagementApplicationInfo? application = await identityManagementClient.GetApplicationByClientIdAsync(clientId, cancellationToken);
+            if (application is null || string.IsNullOrWhiteSpace(application.JwtSecretKey))
             {
                 return null;
             }
@@ -42,7 +42,7 @@ namespace Archon.Api.Security.Authentication
                 ValidateAudience = !string.IsNullOrWhiteSpace(jwtOptions.Audience),
                 ValidAudience = jwtOptions.Audience,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(application.Secret)),
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(application.JwtSecretKey)),
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.FromMinutes(1)
             };

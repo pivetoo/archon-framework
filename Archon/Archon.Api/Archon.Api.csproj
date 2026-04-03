@@ -14,4 +14,9 @@
     <Folder Include="Controllers\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Archon.Application\Archon.Application.csproj" />
+    <ProjectReference Include="..\Archon.Infrastructure\Archon.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>

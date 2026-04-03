@@ -3,8 +3,6 @@ using Archon.Api.Security.Authentication;
 using Archon.Application.Abstractions;
 using Archon.Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Archon.Api.DependencyInjection
 {
