@@ -19,7 +19,6 @@ namespace Archon.Api.DependencyInjection
             {
                 options.SuppressModelStateInvalidFilter = true;
             });
-            services.AddScoped<ArchonAccessSyncService>();
             services.AddOpenApi();
 
             return services;

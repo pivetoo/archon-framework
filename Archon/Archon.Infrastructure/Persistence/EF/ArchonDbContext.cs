@@ -47,6 +47,8 @@ namespace Archon.Infrastructure.Persistence.EF
                 modelBuilder.ApplyConfigurationsFromAssembly(assembly);
             }
 
+            ArchonModelConventions.ApplyIdentifierConventions(modelBuilder);
+
             base.OnModelCreating(modelBuilder);
         }
 

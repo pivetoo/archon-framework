@@ -7,56 +7,56 @@ namespace Archon.Infrastructure.Migrations
     {
         public override void Up()
         {
-            Create.Table("AuditEntries")
-                .WithColumn("Id").AsInt64().PrimaryKey().Identity()
-                .WithColumn("EntityName").AsString(200).NotNullable()
-                .WithColumn("EntityId").AsString(100).NotNullable()
-                .WithColumn("TenantId").AsString(100).Nullable()
-                .WithColumn("Action").AsInt32().NotNullable()
-                .WithColumn("ChangedAt").AsDateTimeOffset().NotNullable()
-                .WithColumn("ChangedBy").AsString(100).Nullable()
-                .WithColumn("CorrelationId").AsString(100).Nullable()
-                .WithColumn("ParentEntityName").AsString(200).Nullable()
-                .WithColumn("ParentEntityId").AsString(100).Nullable()
-                .WithColumn("Source").AsString(100).Nullable()
-                .WithColumn("CreatedAt").AsDateTimeOffset().NotNullable()
-                .WithColumn("UpdatedAt").AsDateTimeOffset().Nullable();
+            Create.Table("auditentries")
+                .WithColumn("id").AsInt64().PrimaryKey().Identity()
+                .WithColumn("entityname").AsString(200).NotNullable()
+                .WithColumn("entityid").AsString(100).NotNullable()
+                .WithColumn("tenantid").AsString(100).Nullable()
+                .WithColumn("action").AsInt32().NotNullable()
+                .WithColumn("changedat").AsDateTimeOffset().NotNullable()
+                .WithColumn("changedby").AsString(100).Nullable()
+                .WithColumn("correlationid").AsString(100).Nullable()
+                .WithColumn("parententityname").AsString(200).Nullable()
+                .WithColumn("parententityid").AsString(100).Nullable()
+                .WithColumn("source").AsString(100).Nullable()
+                .WithColumn("createdat").AsDateTimeOffset().NotNullable()
+                .WithColumn("updatedat").AsDateTimeOffset().Nullable();
 
-            Create.Index("IX_AuditEntries_EntityName_EntityId_ChangedAt")
-                .OnTable("AuditEntries")
-                .OnColumn("EntityName").Ascending()
-                .OnColumn("EntityId").Ascending()
-                .OnColumn("ChangedAt").Descending();
+            Create.Index("ix_auditentries_entityname_entityid_changedat")
+                .OnTable("auditentries")
+                .OnColumn("entityname").Ascending()
+                .OnColumn("entityid").Ascending()
+                .OnColumn("changedat").Descending();
 
-            Create.Index("IX_AuditEntries_CorrelationId")
-                .OnTable("AuditEntries")
-                .OnColumn("CorrelationId").Ascending();
+            Create.Index("ix_auditentries_correlationid")
+                .OnTable("auditentries")
+                .OnColumn("correlationid").Ascending();
 
-            Create.Table("AuditPropertyChanges")
-                .WithColumn("Id").AsInt64().PrimaryKey().Identity()
-                .WithColumn("AuditEntryId").AsInt64().NotNullable()
-                .WithColumn("PropertyName").AsString(200).NotNullable()
-                .WithColumn("OldValue").AsString(int.MaxValue).Nullable()
-                .WithColumn("NewValue").AsString(int.MaxValue).Nullable()
-                .WithColumn("CreatedAt").AsDateTimeOffset().NotNullable()
-                .WithColumn("UpdatedAt").AsDateTimeOffset().Nullable();
+            Create.Table("auditpropertychanges")
+                .WithColumn("id").AsInt64().PrimaryKey().Identity()
+                .WithColumn("auditentryid").AsInt64().NotNullable()
+                .WithColumn("propertyname").AsString(200).NotNullable()
+                .WithColumn("oldvalue").AsString(int.MaxValue).Nullable()
+                .WithColumn("newvalue").AsString(int.MaxValue).Nullable()
+                .WithColumn("createdat").AsDateTimeOffset().NotNullable()
+                .WithColumn("updatedat").AsDateTimeOffset().Nullable();
 
-            Create.ForeignKey("FK_AuditPropertyChanges_AuditEntries_AuditEntryId")
-                .FromTable("AuditPropertyChanges").ForeignColumn("AuditEntryId")
-                .ToTable("AuditEntries").PrimaryColumn("Id")
+            Create.ForeignKey("fk_auditpropertychanges_auditentries_auditentryid")
+                .FromTable("auditpropertychanges").ForeignColumn("auditentryid")
+                .ToTable("auditentries").PrimaryColumn("id")
                 .OnDelete(System.Data.Rule.Cascade);
         }
 
         public override void Down()
         {
-            Delete.ForeignKey("FK_AuditPropertyChanges_AuditEntries_AuditEntryId").OnTable("AuditPropertyChanges");
+            Delete.ForeignKey("fk_auditpropertychanges_auditentries_auditentryid").OnTable("auditpropertychanges");
 
-            Delete.Table("AuditPropertyChanges");
+            Delete.Table("auditpropertychanges");
 
-            Delete.Index("IX_AuditEntries_CorrelationId").OnTable("AuditEntries");
-            Delete.Index("IX_AuditEntries_EntityName_EntityId_ChangedAt").OnTable("AuditEntries");
+            Delete.Index("ix_auditentries_correlationid").OnTable("auditentries");
+            Delete.Index("ix_auditentries_entityname_entityid_changedat").OnTable("auditentries");
 
-            Delete.Table("AuditEntries");
+            Delete.Table("auditentries");
         }
     }
 }

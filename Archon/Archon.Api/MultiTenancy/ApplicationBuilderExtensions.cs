@@ -29,7 +29,7 @@ namespace Archon.Api.MultiTenancy
         public static async Task<WebApplication> UseArchonAccessSyncAsync(this WebApplication app, CancellationToken cancellationToken = default)
         {
             using IServiceScope scope = app.Services.CreateScope();
-            ArchonAccessSyncService accessSyncService = scope.ServiceProvider.GetRequiredService<ArchonAccessSyncService>();
+            ArchonAccessSyncService accessSyncService = ActivatorUtilities.CreateInstance<ArchonAccessSyncService>(scope.ServiceProvider);
             await accessSyncService.SyncAsync(cancellationToken);
 
             return app;

@@ -13,6 +13,23 @@ namespace Archon.Infrastructure.Persistence.EF
             ApplyRelationshipConventions(modelBuilder);
         }
 
+        public static void ApplyIdentifierConventions(ModelBuilder modelBuilder)
+        {
+            foreach (IMutableEntityType entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                string? tableName = entityType.GetTableName();
+                if (!string.IsNullOrWhiteSpace(tableName))
+                {
+                    entityType.SetTableName(tableName.ToLowerInvariant());
+                }
+
+                foreach (IMutableProperty property in entityType.GetProperties())
+                {
+                    property.SetColumnName(property.Name.ToLowerInvariant());
+                }
+            }
+        }
+
         private static void ApplyEntityConventions(ModelBuilder modelBuilder)
         {
             foreach (IMutableEntityType entityType in modelBuilder.Model.GetEntityTypes())

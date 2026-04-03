@@ -8,7 +8,7 @@ namespace Archon.Infrastructure.Persistence.EF.Configurations
     {
         public void Configure(EntityTypeBuilder<AuditEntry> builder)
         {
-            builder.ToTable("AuditEntries");
+            builder.ToTable("auditentries");
 
             builder.HasKey(entry => entry.Id);
 

@@ -8,7 +8,7 @@ namespace Archon.Infrastructure.Persistence.EF.Configurations
     {
         public void Configure(EntityTypeBuilder<AuditPropertyChange> builder)
         {
-            builder.ToTable("AuditPropertyChanges");
+            builder.ToTable("auditpropertychanges");
 
             builder.HasKey(change => change.Id);
 
