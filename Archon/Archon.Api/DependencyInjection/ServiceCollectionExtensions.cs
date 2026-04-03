@@ -3,6 +3,7 @@ using Archon.Api.Security.Authentication;
 using Archon.Application.Abstractions;
 using Archon.Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Archon.Api.DependencyInjection
 {
@@ -13,6 +14,10 @@ namespace Archon.Api.DependencyInjection
             services.AddArchonMultiTenancy(configuration);
             services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+            services.Configure<ApiBehaviorOptions>(options =>
+            {
+                options.SuppressModelStateInvalidFilter = true;
+            });
             services.AddOpenApi();
 
             return services;
