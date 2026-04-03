@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Archon.Api/Archon.Api.csproj" Id="6f162468-8404-4ab0-924d-e67a046e06e8" />
+  <Project Path="Archon.Application/Archon.Application.csproj" Id="89311762-6182-4cd4-9d74-a2d525a9d982" />
+  <Project Path="Archon.Core/Archon.Core.csproj" Id="6aa68bd8-5be4-49ee-80ea-f673f7af29bf" />
+  <Project Path="Archon.Infrastructure/Archon.Infrastructure.csproj" Id="bf5a452b-1607-497e-84e4-4db34b377065" />
+  <Project Path="Archon.Testing/Archon.Testing.csproj" Id="4023b271-5a4c-435f-90bd-5bbc28d3e30b" />
+</Solution>
