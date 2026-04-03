@@ -1,3 +1,4 @@
+using Archon.Api.Security;
 using Archon.Api.ExceptionHandling;
 
 namespace Archon.Api.MultiTenancy
@@ -10,6 +11,11 @@ namespace Archon.Api.MultiTenancy
             app.UseMiddleware<TenantResolutionMiddleware>();
 
             return app;
+        }
+
+        public static IApplicationBuilder UseSessionValidation(this IApplicationBuilder app)
+        {
+            return app.UseMiddleware<SessionValidationMiddleware>();
         }
     }
 }
