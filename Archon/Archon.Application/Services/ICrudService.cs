@@ -12,14 +12,14 @@ namespace Archon.Application.Services
 
         bool CustomValidate(T entity);
 
-        Task<bool> ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
+        Task<bool> ExecuteInTransaction(Func<Task> operation, CancellationToken cancellationToken = default);
 
-        Task<bool> InsertAsync(CancellationToken cancellationToken = default, params T[] entities);
+        Task<bool> Insert(CancellationToken cancellationToken = default, params T[] entities);
 
-        Task<T?> UpdateAsync(T entity, CancellationToken cancellationToken = default);
+        Task<T?> Update(T entity, CancellationToken cancellationToken = default);
 
-        Task<T?> DeleteAsync(long id, CancellationToken cancellationToken = default);
+        Task<T?> Delete(long id, CancellationToken cancellationToken = default);
 
-        Task<bool> DeleteAsync(T[] entities, CancellationToken cancellationToken = default);
+        Task<bool> Delete(T[] entities, CancellationToken cancellationToken = default);
     }
 }

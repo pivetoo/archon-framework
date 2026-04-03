@@ -15,7 +15,7 @@ namespace Archon.Infrastructure.Services
             this.dbContext = dbContext;
         }
 
-        public Task<PagedResult<AuditEntryModel>> GetByEntityAsync(string entityName, string entityId, PagedRequest request, CancellationToken cancellationToken = default)
+        public Task<PagedResult<AuditEntryModel>> GetByEntity(string entityName, string entityId, PagedRequest request, CancellationToken cancellationToken = default)
         {
             IQueryable<AuditEntry> query = dbContext.Set<AuditEntry>()
                 .AsNoTracking()
@@ -27,7 +27,7 @@ namespace Archon.Infrastructure.Services
             return ToPagedAuditResultAsync(query, request, includePropertyChanges: false, cancellationToken);
         }
 
-        public async Task<AuditEntryModel?> GetByIdAsync(long auditEntryId, CancellationToken cancellationToken = default)
+        public async Task<AuditEntryModel?> GetById(long auditEntryId, CancellationToken cancellationToken = default)
         {
             AuditEntry? entry = await dbContext.Set<AuditEntry>()
                 .AsNoTracking()

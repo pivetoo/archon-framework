@@ -37,7 +37,7 @@ namespace Archon.Infrastructure.Services
             return ValidateEntity(entity);
         }
 
-        public virtual async Task<bool> ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+        public virtual async Task<bool> ExecuteInTransaction(Func<Task> operation, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -68,7 +68,7 @@ namespace Archon.Infrastructure.Services
             }
         }
 
-        public virtual async Task<bool> InsertAsync(CancellationToken cancellationToken = default, params T[] entities)
+        public virtual async Task<bool> Insert(CancellationToken cancellationToken = default, params T[] entities)
         {
             messages.Clear();
 
@@ -97,14 +97,14 @@ namespace Archon.Infrastructure.Services
                 entity.SetCreatedAt(now);
             }
 
-            return await ExecuteInTransactionAsync(async () =>
+            return await ExecuteInTransaction(async () =>
             {
                 DbContext.Set<T>().AddRange(entities);
                 await Task.CompletedTask;
             }, cancellationToken);
         }
 
-        public virtual async Task<T?> UpdateAsync(T entity, CancellationToken cancellationToken = default)
+        public virtual async Task<T?> Update(T entity, CancellationToken cancellationToken = default)
         {
             messages.Clear();
 
@@ -123,7 +123,7 @@ namespace Archon.Infrastructure.Services
                 return null;
             }
 
-            return await ExecuteInTransactionAsync(async () =>
+            return await ExecuteInTransaction(async () =>
             {
                 T? currentEntity = await DbContext.Set<T>()
                     .AsTracking()
@@ -144,7 +144,7 @@ namespace Archon.Infrastructure.Services
             }, cancellationToken) ? entity : null;
         }
 
-        public virtual async Task<T?> DeleteAsync(long id, CancellationToken cancellationToken = default)
+        public virtual async Task<T?> Delete(long id, CancellationToken cancellationToken = default)
         {
             messages.Clear();
             T? entity = await DbContext.Set<T>()
@@ -157,10 +157,10 @@ namespace Archon.Infrastructure.Services
                 return null;
             }
 
-            return await DeleteAsync([entity], cancellationToken) ? entity : null;
+            return await Delete([entity], cancellationToken) ? entity : null;
         }
 
-        public virtual async Task<bool> DeleteAsync(T[] entities, CancellationToken cancellationToken = default)
+        public virtual async Task<bool> Delete(T[] entities, CancellationToken cancellationToken = default)
         {
             messages.Clear();
 
@@ -169,7 +169,7 @@ namespace Archon.Infrastructure.Services
                 return true;
             }
 
-            return await ExecuteInTransactionAsync(async () =>
+            return await ExecuteInTransaction(async () =>
             {
                 DbContext.Set<T>().RemoveRange(entities);
                 await Task.CompletedTask;

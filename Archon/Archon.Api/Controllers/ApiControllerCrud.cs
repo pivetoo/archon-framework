@@ -23,7 +23,7 @@ namespace Archon.Api.Controllers
                 return validationResult;
             }
 
-            bool success = await Service.InsertAsync(cancellationToken, entity);
+            bool success = await Service.Insert(cancellationToken, entity);
             if (!success)
             {
                 return Http422(Service.Messages);
@@ -41,7 +41,7 @@ namespace Archon.Api.Controllers
                 return validationResult;
             }
 
-            T? result = await Service.UpdateAsync(entity, cancellationToken);
+            T? result = await Service.Update(entity, cancellationToken);
             if (result is null)
             {
                 return ResolveServiceError();
@@ -53,7 +53,7 @@ namespace Archon.Api.Controllers
         [DeleteEndpoint("{id:long}")]
         public virtual async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
         {
-            T? result = await Service.DeleteAsync(id, cancellationToken);
+            T? result = await Service.Delete(id, cancellationToken);
             if (result is null)
             {
                 return ResolveServiceError();

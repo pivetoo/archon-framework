@@ -28,7 +28,7 @@ namespace Archon.Api.Controllers
                 return Http400("Entity id is required.");
             }
 
-            var result = await auditService.GetByEntityAsync(entityName, entityId, request, cancellationToken);
+            var result = await auditService.GetByEntity(entityName, entityId, request, cancellationToken);
             return Http200(result);
         }
 
@@ -41,7 +41,7 @@ namespace Archon.Api.Controllers
                 return Http400("Audit entry id is required.");
             }
 
-            var result = await auditService.GetByIdAsync(auditEntryId, cancellationToken);
+            var result = await auditService.GetById(auditEntryId, cancellationToken);
             return result is null ? Http404("Audit entry not found.") : Http200(result);
         }
     }
