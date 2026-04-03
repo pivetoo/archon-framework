@@ -72,6 +72,21 @@ namespace Archon.Infrastructure.DependencyInjection
             return services;
         }
 
+        public static IServiceCollection AddServicesFromAssembly(this IServiceCollection services, Assembly assembly)
+        {
+            services.Scan(scan => scan
+                .FromAssemblies(assembly)
+                .AddClasses(classes => classes
+                    .Where(type =>
+                        type.Name.EndsWith("Service", StringComparison.Ordinal) &&
+                        type.Namespace?.Contains("Services", StringComparison.Ordinal) == true))
+                .AsImplementedInterfaces()
+                .AsSelf()
+                .WithScopedLifetime());
+
+            return services;
+        }
+
         public static IServiceCollection RunMigrations(this IServiceCollection services, IConfiguration configuration, string schema, params Assembly[] migrationAssemblies)
         {
             if (!configuration.GetValue<bool>("RunMigrations", false))
