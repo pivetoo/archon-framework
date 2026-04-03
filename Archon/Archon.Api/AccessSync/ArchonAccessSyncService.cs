@@ -2,7 +2,7 @@ using Archon.Api.Attributes;
 using Archon.Core.Access;
 using Archon.Infrastructure.IdentityManagement;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Patterns;
 
 namespace Archon.Api.AccessSync
 {
