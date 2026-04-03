@@ -3,6 +3,7 @@ using Archon.Application.Persistence;
 using Archon.Application.Services;
 using Archon.Core.ValueObjects;
 using Archon.Infrastructure.IdentityManagement;
+using Archon.Infrastructure.Migrations;
 using Archon.Infrastructure.MultiTenancy;
 using Archon.Infrastructure.Persistence.Dapper;
 using Archon.Infrastructure.Persistence.EF;
@@ -71,6 +72,32 @@ namespace Archon.Infrastructure.DependencyInjection
             return services;
         }
 
+        public static IServiceCollection RunMigrations(this IServiceCollection services, IConfiguration configuration, string schema, params Assembly[] migrationAssemblies)
+        {
+            if (!configuration.GetValue<bool>("RunMigrations", false))
+            {
+                return services;
+            }
+
+            List<(string name, string connectionString, DatabaseProvider databaseProvider)> connections = GetMigrationConnections(configuration);
+
+            foreach ((string name, string connectionString, DatabaseProvider databaseProvider) in connections)
+            {
+                Console.WriteLine($"Running migrations for tenant: {name}");
+
+                try
+                {
+                    DatabaseMigrator.Run(connectionString, schema, databaseProvider, migrationAssemblies);
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine($"Migration failed for tenant {name}: {exception.Message}");
+                }
+            }
+
+            return services;
+        }
+
         private static TenantDatabaseOptions BindTenantDatabaseOptions(IConfiguration configuration)
         {
             TenantDatabaseOptions tenantDatabaseOptions = new TenantDatabaseOptions();
@@ -105,6 +132,23 @@ namespace Archon.Infrastructure.DependencyInjection
             }
 
             return assemblies;
+        }
+
+        private static List<(string name, string connectionString, DatabaseProvider databaseProvider)> GetMigrationConnections(IConfiguration configuration)
+        {
+            TenantDatabaseOptions tenantDatabaseOptions = BindTenantDatabaseOptions(configuration);
+
+            List<(string name, string connectionString, DatabaseProvider databaseProvider)> connections = tenantDatabaseOptions.TenantDatabases
+                .Select(item => (item.Key, item.Value.ConnectionString, item.Value.GetDatabaseProvider()))
+                .Where(item => !string.IsNullOrWhiteSpace(item.ConnectionString))
+                .ToList();
+
+            if (connections.Count == 0)
+            {
+                throw new InvalidOperationException("No valid connection string was found in TenantDatabases.");
+            }
+
+            return connections;
         }
 
         private static (string connectionString, DatabaseProvider databaseProvider, string? schema) ResolveCurrentTenant(ITenantContext tenantContext, TenantDatabaseOptions tenantDatabaseOptions)
