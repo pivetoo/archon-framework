@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using System.Net.Http.Json;
+using Archon.Core.Access;
 
 namespace Archon.Infrastructure.IdentityManagement
 {
@@ -60,6 +61,14 @@ namespace Archon.Infrastructure.IdentityManagement
         public void ClearCache()
         {
             cache.Clear();
+        }
+
+        public async Task SyncAccessResourcesAsync(IReadOnlyCollection<AccessResourceModel> resources, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(resources);
+
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync("/api/access-resources/sync", resources, cancellationToken);
+            response.EnsureSuccessStatusCode();
         }
     }
 }

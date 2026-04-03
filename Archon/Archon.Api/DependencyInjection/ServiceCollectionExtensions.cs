@@ -1,3 +1,4 @@
+using Archon.Api.AccessSync;
 using Archon.Api.Security;
 using Archon.Api.Security.Authentication;
 using Archon.Application.Abstractions;
@@ -18,6 +19,7 @@ namespace Archon.Api.DependencyInjection
             {
                 options.SuppressModelStateInvalidFilter = true;
             });
+            services.AddScoped<ArchonAccessSyncService>();
             services.AddOpenApi();
 
             return services;

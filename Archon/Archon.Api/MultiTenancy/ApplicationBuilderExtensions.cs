@@ -1,6 +1,8 @@
+using Archon.Api.AccessSync;
 using Archon.Api.ExceptionHandling;
 using Archon.Api.Security;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Archon.Api.MultiTenancy
 {
@@ -22,6 +24,15 @@ namespace Archon.Api.MultiTenancy
         public static IApplicationBuilder UseIdentityManagementUserSync(this IApplicationBuilder app)
         {
             return app.UseMiddleware<IdentityManagementUserSyncMiddleware>();
+        }
+
+        public static async Task<WebApplication> UseArchonAccessSyncAsync(this WebApplication app, CancellationToken cancellationToken = default)
+        {
+            using IServiceScope scope = app.Services.CreateScope();
+            ArchonAccessSyncService accessSyncService = scope.ServiceProvider.GetRequiredService<ArchonAccessSyncService>();
+            await accessSyncService.SyncAsync(cancellationToken);
+
+            return app;
         }
     }
 }
