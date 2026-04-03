@@ -2,20 +2,21 @@ using Archon.Api.Attributes;
 using Archon.Application.Services;
 using Archon.Core.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Archon.Api.Controllers
 {
-    public abstract class ApiControllerCrud<T> : ApiControllerBase where T : Entity
+    [RequireAccess]
+    public abstract class ApiControllerCrud<T> : ReadOnlyController<T> where T : Entity
     {
         protected ICrudService<T> Service { get; }
 
-        protected ApiControllerCrud(ICrudService<T> service)
+        protected ApiControllerCrud(ICrudService<T> service, DbContext dbContext) : base(dbContext)
         {
             Service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
-        [PostEndpoint]
-        public virtual async Task<IActionResult> Post([FromBody] T entity, CancellationToken cancellationToken)
+        protected virtual async Task<IActionResult> Create(T entity, CancellationToken cancellationToken)
         {
             IActionResult? validationResult = ValidateBody(entity);
             if (validationResult is not null)
@@ -32,8 +33,7 @@ namespace Archon.Api.Controllers
             return Http201(entity, "Record created successfully.");
         }
 
-        [PutEndpoint]
-        public virtual async Task<IActionResult> Put([FromBody] T entity, CancellationToken cancellationToken)
+        protected virtual async Task<IActionResult> Update(T entity, CancellationToken cancellationToken)
         {
             IActionResult? validationResult = ValidateBody(entity);
             if (validationResult is not null)
@@ -50,8 +50,7 @@ namespace Archon.Api.Controllers
             return Http200(result, "Record updated successfully.");
         }
 
-        [DeleteEndpoint("{id:long}")]
-        public virtual async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
+        protected virtual async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
         {
             T? result = await Service.Delete(id, cancellationToken);
             if (result is null)
