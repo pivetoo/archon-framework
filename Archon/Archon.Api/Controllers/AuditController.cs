@@ -14,7 +14,7 @@ namespace Archon.Api.Controllers
             this.auditService = auditService;
         }
 
-        [RequireAccess]
+        [RequireAccess("Permite consultar o histórico de auditoria de uma entidade específica.")]
         [GetEndpoint("entity/{entityName}/{entityId}")]
         public async Task<IActionResult> GetByEntity(string entityName, string entityId, [FromQuery] PagedRequest request, CancellationToken cancellationToken)
         {
@@ -32,7 +32,7 @@ namespace Archon.Api.Controllers
             return Http200(result);
         }
 
-        [RequireAccess]
+        [RequireAccess("Permite consultar os detalhes de um registro específico da auditoria.")]
         [GetEndpoint("{auditEntryId:long}")]
         public async Task<IActionResult> GetById(long auditEntryId, CancellationToken cancellationToken)
         {

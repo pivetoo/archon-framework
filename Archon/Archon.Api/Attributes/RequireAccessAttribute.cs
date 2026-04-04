@@ -8,6 +8,13 @@ namespace Archon.Api.Attributes
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
     public sealed class RequireAccessAttribute : Attribute, IAuthorizationFilter
     {
+        public string Description { get; }
+
+        public RequireAccessAttribute(string description = "")
+        {
+            Description = description?.Trim() ?? string.Empty;
+        }
+
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             ClaimsPrincipal user = context.HttpContext.User;

@@ -3,6 +3,7 @@ using Archon.Api.ExceptionHandling;
 using Archon.Api.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Archon.Api.MultiTenancy
 {
@@ -28,9 +29,26 @@ namespace Archon.Api.MultiTenancy
 
         public static async Task<WebApplication> UseArchonAccessSyncAsync(this WebApplication app, CancellationToken cancellationToken = default)
         {
-            using IServiceScope scope = app.Services.CreateScope();
-            ArchonAccessSyncService accessSyncService = ActivatorUtilities.CreateInstance<ArchonAccessSyncService>(scope.ServiceProvider);
-            await accessSyncService.SyncAsync(cancellationToken);
+            app.Lifetime.ApplicationStarted.Register(() =>
+            {
+                _ = Task.Run(async () =>
+                {
+                    using IServiceScope scope = app.Services.CreateScope();
+                    ILogger logger = scope.ServiceProvider
+                        .GetRequiredService<ILoggerFactory>()
+                        .CreateLogger("ArchonAccessSync");
+
+                    try
+                    {
+                        ArchonAccessSyncService accessSyncService = ActivatorUtilities.CreateInstance<ArchonAccessSyncService>(scope.ServiceProvider);
+                        await accessSyncService.SyncAsync(cancellationToken);
+                    }
+                    catch (Exception exception)
+                    {
+                        logger.LogError(exception, "An error occurred while synchronizing access resources with IdentityManagement.");
+                    }
+                }, cancellationToken);
+            });
 
             return app;
         }

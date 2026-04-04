@@ -1,6 +1,7 @@
 using Archon.Api.Attributes;
 using Archon.Core.Access;
 using Archon.Infrastructure.IdentityManagement;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Routing.Patterns;
 
@@ -10,18 +11,23 @@ namespace Archon.Api.AccessSync
     {
         private readonly EndpointDataSource endpointDataSource;
         private readonly IdentityManagementClient identityManagementClient;
+        private readonly JwtOptions jwtOptions;
 
-        public ArchonAccessSyncService(EndpointDataSource endpointDataSource, IdentityManagementClient identityManagementClient)
+        public ArchonAccessSyncService(
+            EndpointDataSource endpointDataSource,
+            IdentityManagementClient identityManagementClient,
+            IOptions<JwtOptions> jwtOptions)
         {
             this.endpointDataSource = endpointDataSource;
             this.identityManagementClient = identityManagementClient;
+            this.jwtOptions = jwtOptions.Value;
         }
 
         public async Task SyncAsync(CancellationToken cancellationToken = default)
         {
             List<AccessResourceModel> resources = endpointDataSource.Endpoints
                 .OfType<RouteEndpoint>()
-                .Select(CreateResource)
+                .Select(endpoint => CreateResource(endpoint, jwtOptions.Audience))
                 .Where(resource => resource is not null)
                 .Distinct(AccessResourceComparer.Instance)
                 .Cast<AccessResourceModel>()
@@ -32,13 +38,17 @@ namespace Archon.Api.AccessSync
             await identityManagementClient.SyncAccessResourcesAsync(resources, cancellationToken);
         }
 
-        private static AccessResourceModel? CreateResource(RouteEndpoint endpoint)
+        private static AccessResourceModel? CreateResource(RouteEndpoint endpoint, string systemAudience)
         {
             ControllerActionDescriptor? actionDescriptor = endpoint.Metadata.GetMetadata<ControllerActionDescriptor>();
-            if (actionDescriptor is null || !RequiresAccess(actionDescriptor))
+            if (actionDescriptor is null || !RequiresAccess(actionDescriptor) || string.IsNullOrWhiteSpace(systemAudience))
             {
                 return null;
             }
+
+            RequireAccessAttribute? accessAttribute =
+                actionDescriptor.MethodInfo.GetCustomAttributes(typeof(RequireAccessAttribute), true).OfType<RequireAccessAttribute>().FirstOrDefault()
+                ?? actionDescriptor.ControllerTypeInfo.GetCustomAttributes(typeof(RequireAccessAttribute), true).OfType<RequireAccessAttribute>().FirstOrDefault();
 
             string controller = ToCamelCase(actionDescriptor.ControllerName);
             string action = ToCamelCase(actionDescriptor.ActionName);
@@ -50,7 +60,9 @@ namespace Archon.Api.AccessSync
 
             return new AccessResourceModel
             {
+                SystemAudience = systemAudience,
                 Name = accessName,
+                Description = accessAttribute?.Description ?? string.Empty,
                 Controller = controller,
                 Action = action,
                 HttpMethod = httpMethod,
@@ -101,14 +113,15 @@ namespace Archon.Api.AccessSync
                     return false;
                 }
 
-                return string.Equals(x.Name, y.Name, StringComparison.Ordinal) &&
+                return string.Equals(x.SystemAudience, y.SystemAudience, StringComparison.Ordinal) &&
+                    string.Equals(x.Name, y.Name, StringComparison.Ordinal) &&
                     string.Equals(x.HttpMethod, y.HttpMethod, StringComparison.Ordinal) &&
                     string.Equals(x.Route, y.Route, StringComparison.Ordinal);
             }
 
             public int GetHashCode(AccessResourceModel obj)
             {
-                return HashCode.Combine(obj.Name, obj.HttpMethod, obj.Route);
+                return HashCode.Combine(obj.SystemAudience, obj.Name, obj.HttpMethod, obj.Route);
             }
         }
     }
