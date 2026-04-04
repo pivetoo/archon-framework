@@ -44,7 +44,9 @@ namespace Archon.Infrastructure.IdentityManagement
 
             try
             {
-                IdentityManagementApplicationInfo? application = await httpClient.GetFromJsonAsync<IdentityManagementApplicationInfo>($"/api/auth/contract/{clientId}", cancellationToken);
+                IdentityManagementApplicationResponse? response = await httpClient.GetFromJsonAsync<IdentityManagementApplicationResponse>(
+                    $"/api/auth/contract/{clientId}", cancellationToken);
+                IdentityManagementApplicationInfo? application = response?.Data;
                 if (application is not null && application.IsActive)
                 {
                     cache[clientId] = application;

@@ -1,11 +1,22 @@
 using Archon.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Archon.Infrastructure.Persistence.EF
 {
     internal static class ArchonModelConventions
     {
+        private static readonly ValueConverter<DateTimeOffset, DateTimeOffset> UtcDateTimeOffsetConverter =
+            new(
+                value => value.ToUniversalTime(),
+                value => value.ToUniversalTime());
+
+        private static readonly ValueConverter<DateTimeOffset?, DateTimeOffset?> NullableUtcDateTimeOffsetConverter =
+            new(
+                value => value.HasValue ? value.Value.ToUniversalTime() : value,
+                value => value.HasValue ? value.Value.ToUniversalTime() : value);
+
         public static void Apply(ModelBuilder modelBuilder)
         {
             ApplyEntityConventions(modelBuilder);
@@ -77,6 +88,16 @@ namespace Archon.Infrastructure.Persistence.EF
                     {
                         property.SetPrecision(18);
                         property.SetScale(6);
+                    }
+
+                    if (property.ClrType == typeof(DateTimeOffset))
+                    {
+                        property.SetValueConverter(UtcDateTimeOffsetConverter);
+                    }
+
+                    if (property.ClrType == typeof(DateTimeOffset?))
+                    {
+                        property.SetValueConverter(NullableUtcDateTimeOffsetConverter);
                     }
                 }
             }
