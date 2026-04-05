@@ -27,7 +27,7 @@ namespace Archon.Api.MultiTenancy
 
             if (tenant is null)
             {
-                throw new InvalidOperationException("No tenant was configured for the current request.");
+                throw new InvalidOperationException("tenant.notConfigured");
             }
 
             if (tenantContext is MultiTenantContext multiTenantContext)

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="argument.invalid" xml:space="preserve">
+    <value>Argumento invalido.</value>
+  </data>
+  <data name="file.content.required" xml:space="preserve">
+    <value>El contenido del archivo es obligatorio.</value>
+  </data>
+  <data name="auth.forbidden" xml:space="preserve">
+    <value>Acceso denegado.</value>
+  </data>
+  <data name="auth.session.invalidOrExpired" xml:space="preserve">
+    <value>Sesion invalida o expirada.</value>
+  </data>
+  <data name="auth.token.validationFailed" xml:space="preserve">
+    <value>La validacion del token fallo.</value>
+  </data>
+  <data name="auth.token.validationFailedWithDetail" xml:space="preserve">
+    <value>La validacion del token fallo: {0}</value>
+  </data>
+  <data name="request.id.required" xml:space="preserve">
+    <value>El identificador es obligatorio.</value>
+  </data>
+  <data name="request.auditEntry.id.required" xml:space="preserve">
+    <value>El identificador del registro de auditoria es obligatorio.</value>
+  </data>
+  <data name="request.entity.id.required" xml:space="preserve">
+    <value>El identificador de la entidad es obligatorio.</value>
+  </data>
+  <data name="request.entity.name.required" xml:space="preserve">
+    <value>El nombre de la entidad es obligatorio.</value>
+  </data>
+  <data name="operation.completed" xml:space="preserve">
+    <value>Operacion completada con exito.</value>
+  </data>
+  <data name="record.created" xml:space="preserve">
+    <value>Registro creado con exito.</value>
+  </data>
+  <data name="record.deleted" xml:space="preserve">
+    <value>Registro eliminado con exito.</value>
+  </data>
+  <data name="record.notFound" xml:space="preserve">
+    <value>Registro no encontrado.</value>
+  </data>
+  <data name="record.auditEntry.notFound" xml:space="preserve">
+    <value>Registro de auditoria no encontrado.</value>
+  </data>
+  <data name="record.updated" xml:space="preserve">
+    <value>Registro actualizado con exito.</value>
+  </data>
+  <data name="request.body.required" xml:space="preserve">
+    <value>El cuerpo de la solicitud es obligatorio.</value>
+  </data>
+  <data name="auth.unauthorized" xml:space="preserve">
+    <value>No autorizado.</value>
+  </data>
+  <data name="error.unexpected" xml:space="preserve">
+    <value>Ocurrio un error inesperado. Intente nuevamente mas tarde.</value>
+  </data>
+  <data name="error.unexpected.short" xml:space="preserve">
+    <value>Error inesperado.</value>
+  </data>
+  <data name="error.integrity.violation" xml:space="preserve">
+    <value>Ocurrio una violacion de integridad de datos.</value>
+  </data>
+  <data name="tenant.notConfigured" xml:space="preserve">
+    <value>No se configuro ningun tenant para la solicitud actual.</value>
+  </data>
+  <data name="validation.failed" xml:space="preserve">
+    <value>La validacion fallo.</value>
+  </data>
+  <data name="validation.invalidValue" xml:space="preserve">
+    <value>Valor invalido.</value>
+  </data>
+</root>

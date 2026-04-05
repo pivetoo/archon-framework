@@ -1,7 +1,9 @@
 using Archon.Application.Abstractions;
+using Archon.Api.Localization;
 using Archon.Core.Responses;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 
 namespace Archon.Api.Security
 {
@@ -27,11 +29,12 @@ namespace Archon.Api.Security
                         bool isValid = await sessionValidator.IsSessionValidAsync(sessionId, context.RequestAborted);
                         if (!isValid)
                         {
+                            IStringLocalizer<ArchonApiResource> localizer = context.RequestServices.GetRequiredService<IStringLocalizer<ArchonApiResource>>();
                             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                             context.Response.ContentType = "application/json";
                             await context.Response.WriteAsJsonAsync(new ApiResponse
                             {
-                                Message = "Invalid or expired session."
+                                Message = localizer["auth.session.invalidOrExpired"]
                             });
                             return;
                         }

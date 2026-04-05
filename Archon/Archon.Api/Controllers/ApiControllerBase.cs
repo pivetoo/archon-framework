@@ -1,8 +1,10 @@
 using Archon.Application.Abstractions;
+using Archon.Api.Localization;
 using Archon.Core.Pagination;
 using Archon.Core.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.Localization;
 
 namespace Archon.Api.Controllers
 {
@@ -11,6 +13,8 @@ namespace Archon.Api.Controllers
     public abstract class ApiControllerBase : ControllerBase
     {
         protected ICurrentUser CurrentUser => HttpContext.RequestServices.GetRequiredService<ICurrentUser>();
+
+        protected IStringLocalizer<ArchonApiResource> Localizer => HttpContext.RequestServices.GetRequiredService<IStringLocalizer<ArchonApiResource>>();
 
         protected long? CurrentUserId => CurrentUser.UserId;
 
@@ -24,12 +28,12 @@ namespace Archon.Api.Controllers
         {
             if (body is null)
             {
-                return Http400("Request body is required.");
+                return Http400(Localizer["request.body.required"]);
             }
 
             if (!ModelState.IsValid)
             {
-                return Http400("Validation failed.", NormalizeModelStateErrors(ModelState));
+                return Http400(Localizer["validation.failed"], NormalizeModelStateErrors(ModelState, Localizer));
             }
 
             return null;
@@ -57,7 +61,7 @@ namespace Archon.Api.Controllers
 
         protected IActionResult Http204()
         {
-            return StatusCode(StatusCodes.Status200OK, CreateResponse("Operation completed successfully."));
+            return StatusCode(StatusCodes.Status200OK, CreateResponse(Localizer["operation.completed"]));
         }
 
         protected IActionResult Http400(string message, object? errors = null)
@@ -67,17 +71,17 @@ namespace Archon.Api.Controllers
 
         protected IActionResult Http401(string? message = null, object? errors = null)
         {
-            return StatusCode(StatusCodes.Status401Unauthorized, CreateResponse(message ?? "Unauthorized.", errors: errors));
+            return StatusCode(StatusCodes.Status401Unauthorized, CreateResponse(message ?? Localizer["auth.unauthorized"], errors: errors));
         }
 
         protected IActionResult Http403(string? message = null, object? errors = null)
         {
-            return StatusCode(StatusCodes.Status403Forbidden, CreateResponse(message ?? "Forbidden.", errors: errors));
+            return StatusCode(StatusCodes.Status403Forbidden, CreateResponse(message ?? Localizer["auth.forbidden"], errors: errors));
         }
 
         protected IActionResult Http404(string? message = null, object? errors = null)
         {
-            return StatusCode(StatusCodes.Status404NotFound, CreateResponse(message ?? "Resource not found.", errors: errors));
+            return StatusCode(StatusCodes.Status404NotFound, CreateResponse(message ?? Localizer["record.notFound"], errors: errors));
         }
 
         protected IActionResult Http409(string message, object? errors = null)
@@ -92,7 +96,7 @@ namespace Archon.Api.Controllers
 
         protected IActionResult Http422(object errors, string? message = null)
         {
-            return StatusCode(StatusCodes.Status422UnprocessableEntity, CreateResponse(message ?? "Validation failed.", errors: errors));
+            return StatusCode(StatusCodes.Status422UnprocessableEntity, CreateResponse(message ?? Localizer["validation.failed"], errors: errors));
         }
 
         protected IActionResult Http422(IReadOnlyCollection<Exception> errors, string? message = null)
@@ -109,7 +113,7 @@ namespace Archon.Api.Controllers
         {
             if (content.Length == 0)
             {
-                return Http400("File content is required.");
+                return Http400(Localizer["file.content.required"]);
             }
 
             return File(content, contentType, fileName);
@@ -119,7 +123,7 @@ namespace Archon.Api.Controllers
         {
             if (content.Length == 0)
             {
-                return Http400("File content is required.");
+                return Http400(Localizer["file.content.required"]);
             }
 
             return File(content, contentType, fileName);
@@ -151,21 +155,21 @@ namespace Archon.Api.Controllers
             };
         }
 
-        private static Dictionary<string, IReadOnlyCollection<string>> NormalizeModelStateErrors(ModelStateDictionary modelState)
+        private static Dictionary<string, IReadOnlyCollection<string>> NormalizeModelStateErrors(ModelStateDictionary modelState, IStringLocalizer<ArchonApiResource> localizer)
         {
             return modelState
                 .Where(item => item.Value?.Errors.Count > 0)
                 .ToDictionary(
                     item => item.Key,
                     item => (IReadOnlyCollection<string>)item.Value!.Errors
-                        .Select(error => string.IsNullOrWhiteSpace(error.ErrorMessage) ? "Invalid value." : error.ErrorMessage)
+                        .Select(error => string.IsNullOrWhiteSpace(error.ErrorMessage) ? localizer["validation.invalidValue"].Value : error.ErrorMessage)
                         .ToList());
         }
 
-        protected static IReadOnlyCollection<string> NormalizeExceptions(IReadOnlyCollection<Exception> errors)
+        protected IReadOnlyCollection<string> NormalizeExceptions(IReadOnlyCollection<Exception> errors)
         {
             return errors
-                .Select(error => string.IsNullOrWhiteSpace(error.Message) ? "Unexpected error." : error.Message)
+                .Select(error => string.IsNullOrWhiteSpace(error.Message) ? Localizer["error.unexpected.short"].Value : error.Message)
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
         }

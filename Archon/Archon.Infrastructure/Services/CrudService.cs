@@ -121,7 +121,7 @@ namespace Archon.Infrastructure.Services
 
             if (existingEntity is null)
             {
-                messages.Add(new KeyNotFoundException("Record not found."));
+                messages.Add(new KeyNotFoundException("record.notFound"));
                 return null;
             }
 
@@ -133,7 +133,7 @@ namespace Archon.Infrastructure.Services
 
                 if (currentEntity is null)
                 {
-                    throw new KeyNotFoundException("Record not found.");
+                    throw new KeyNotFoundException("record.notFound");
                 }
 
                 DateTimeOffset createdAt = currentEntity.CreatedAt;
@@ -155,7 +155,7 @@ namespace Archon.Infrastructure.Services
 
             if (entity is null)
             {
-                messages.Add(new KeyNotFoundException("Record not found."));
+                messages.Add(new KeyNotFoundException("record.notFound"));
                 return null;
             }
 
@@ -182,7 +182,7 @@ namespace Archon.Infrastructure.Services
         {
             if (entity is null)
             {
-                messages.Add(new ArgumentNullException(nameof(entity), "Request body cannot be null."));
+                messages.Add(new ArgumentNullException(nameof(entity), "request.body.required"));
                 return false;
             }
 

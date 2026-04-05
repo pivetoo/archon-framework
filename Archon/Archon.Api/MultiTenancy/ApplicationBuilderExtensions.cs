@@ -11,6 +11,7 @@ namespace Archon.Api.MultiTenancy
     {
         public static IApplicationBuilder UseArchonApi(this IApplicationBuilder app)
         {
+            app.UseRequestLocalization();
             app.UseMiddleware<ExceptionHandlingMiddleware>();
             app.UseMiddleware<TenantResolutionMiddleware>();
 

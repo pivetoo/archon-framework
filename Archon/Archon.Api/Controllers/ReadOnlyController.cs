@@ -33,7 +33,7 @@ namespace Archon.Api.Controllers
         {
             if (id <= 0)
             {
-                return Http400("Id is required.");
+                return Http400(Localizer["request.id.required"]);
             }
 
             T? entity = await dbContext.Set<T>()
@@ -42,7 +42,7 @@ namespace Archon.Api.Controllers
 
             if (entity is null)
             {
-                return Http404("Record not found.");
+                return Http404(Localizer["record.notFound"]);
             }
 
             return Http200(entity);

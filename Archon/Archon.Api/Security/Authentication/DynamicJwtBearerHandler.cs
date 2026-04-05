@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Encodings.Web;
+using Archon.Api.Localization;
 
 namespace Archon.Api.Security.Authentication
 {
@@ -33,7 +35,8 @@ namespace Archon.Api.Security.Authentication
                 var principal = await jwtValidator.ValidateTokenAsync(token, Context.RequestAborted);
                 if (principal is null)
                 {
-                    return AuthenticateResult.Fail("Token validation failed.");
+                    IStringLocalizer<ArchonApiResource> localizer = Context.RequestServices.GetRequiredService<IStringLocalizer<ArchonApiResource>>();
+                    return AuthenticateResult.Fail(localizer["auth.token.validationFailed"]);
                 }
 
                 AuthenticationTicket ticket = new AuthenticationTicket(principal, Scheme.Name);
@@ -41,11 +44,13 @@ namespace Archon.Api.Security.Authentication
             }
             catch (SecurityTokenException exception)
             {
-                return AuthenticateResult.Fail($"Token validation failed: {exception.Message}");
+                IStringLocalizer<ArchonApiResource> localizer = Context.RequestServices.GetRequiredService<IStringLocalizer<ArchonApiResource>>();
+                return AuthenticateResult.Fail(localizer["auth.token.validationFailedWithDetail", exception.Message]);
             }
             catch
             {
-                return AuthenticateResult.Fail("Token validation failed.");
+                IStringLocalizer<ArchonApiResource> localizer = Context.RequestServices.GetRequiredService<IStringLocalizer<ArchonApiResource>>();
+                return AuthenticateResult.Fail(localizer["auth.token.validationFailed"]);
             }
         }
     }

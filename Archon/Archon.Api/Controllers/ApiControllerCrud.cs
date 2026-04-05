@@ -30,7 +30,7 @@ namespace Archon.Api.Controllers
                 return Http422(Service.Messages);
             }
 
-            return Http201(entity, "Record created successfully.");
+            return Http201(entity, Localizer["record.created"]);
         }
 
         protected virtual async Task<IActionResult> Update(T entity, CancellationToken cancellationToken)
@@ -47,7 +47,7 @@ namespace Archon.Api.Controllers
                 return ResolveServiceError();
             }
 
-            return Http200(result, "Record updated successfully.");
+            return Http200(result, Localizer["record.updated"]);
         }
 
         protected virtual async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
@@ -58,14 +58,14 @@ namespace Archon.Api.Controllers
                 return ResolveServiceError();
             }
 
-            return Http200(result, "Record deleted successfully.");
+            return Http200(result, Localizer["record.deleted"]);
         }
 
         protected virtual IActionResult ResolveServiceError()
         {
             if (Service.Messages.Any(message => message is KeyNotFoundException))
             {
-                return Http404("Record not found.", NormalizeExceptions(Service.Messages));
+                return Http404(Localizer["record.notFound"], NormalizeExceptions(Service.Messages));
             }
 
             return Http422(Service.Messages);

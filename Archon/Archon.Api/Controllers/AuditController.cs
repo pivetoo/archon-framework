@@ -20,12 +20,12 @@ namespace Archon.Api.Controllers
         {
             if (string.IsNullOrWhiteSpace(entityName))
             {
-                return Http400("Entity name is required.");
+                return Http400(Localizer["request.entity.name.required"]);
             }
 
             if (string.IsNullOrWhiteSpace(entityId))
             {
-                return Http400("Entity id is required.");
+                return Http400(Localizer["request.entity.id.required"]);
             }
 
             var result = await auditService.GetByEntity(entityName, entityId, request, cancellationToken);
@@ -38,11 +38,11 @@ namespace Archon.Api.Controllers
         {
             if (auditEntryId <= 0)
             {
-                return Http400("Audit entry id is required.");
+                return Http400(Localizer["request.auditEntry.id.required"]);
             }
 
             var result = await auditService.GetById(auditEntryId, cancellationToken);
-            return result is null ? Http404("Audit entry not found.") : Http200(result);
+            return result is null ? Http404(Localizer["record.auditEntry.notFound"]) : Http200(result);
         }
     }
 }
