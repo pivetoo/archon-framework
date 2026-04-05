@@ -102,6 +102,111 @@
   <data name="common.toast.warningTitle" xml:space="preserve">
     <value>Atenção</value>
   </data>
+  <data name="common.state.noResults" xml:space="preserve">
+    <value>Sem resultados</value>
+  </data>
+  <data name="common.state.noRecordsFound" xml:space="preserve">
+    <value>Nenhum registro encontrado</value>
+  </data>
+  <data name="common.state.adjustFilters" xml:space="preserve">
+    <value>Ajuste filtros, paginação ou critérios de busca para continuar.</value>
+  </data>
+  <data name="common.action.cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="common.action.confirm" xml:space="preserve">
+    <value>Confirmar</value>
+  </data>
+  <data name="common.action.search" xml:space="preserve">
+    <value>Buscar...</value>
+  </data>
+  <data name="common.success.title" xml:space="preserve">
+    <value>Sucesso</value>
+  </data>
+  <data name="common.error.title" xml:space="preserve">
+    <value>Erro</value>
+  </data>
+  <data name="common.error.request" xml:space="preserve">
+    <value>Erro na requisição</value>
+  </data>
+  <data name="common.error.connection" xml:space="preserve">
+    <value>Erro de conexão. Verifique sua internet.</value>
+  </data>
+  <data name="common.error.unknown" xml:space="preserve">
+    <value>Erro desconhecido</value>
+  </data>
+  <data name="common.validation.moreErrors" xml:space="preserve">
+    <value>E mais {0} erro(s).</value>
+  </data>
+  <data name="confirmModal.title" xml:space="preserve">
+    <value>Confirmar ação</value>
+  </data>
+  <data name="confirmModal.description" xml:space="preserve">
+    <value>Tem certeza que deseja continuar?</value>
+  </data>
+  <data name="searchableSelect.placeholder" xml:space="preserve">
+    <value>Selecione uma opção</value>
+  </data>
+  <data name="searchableSelect.noResults" xml:space="preserve">
+    <value>Nenhum resultado encontrado</value>
+  </data>
+  <data name="chart.empty" xml:space="preserve">
+    <value>Nenhum dado disponível</value>
+  </data>
+  <data name="notifications.error.load" xml:space="preserve">
+    <value>Erro ao carregar notificações</value>
+  </data>
+  <data name="client.validation.single" xml:space="preserve">
+    <value>Erro de validação no formulário</value>
+  </data>
+  <data name="client.validation.many" xml:space="preserve">
+    <value>{0} erros de validação no formulário</value>
+  </data>
+  <data name="nav.openSidebar" xml:space="preserve">
+    <value>Abrir menu lateral</value>
+  </data>
+  <data name="nav.select" xml:space="preserve">
+    <value>Selecione</value>
+  </data>
+  <data name="nav.modules" xml:space="preserve">
+    <value>Módulos</value>
+  </data>
+  <data name="nav.notifications" xml:space="preserve">
+    <value>Notificações</value>
+  </data>
+  <data name="nav.notifications.unread.one" xml:space="preserve">
+    <value>{0} não lida</value>
+  </data>
+  <data name="nav.notifications.unread.many" xml:space="preserve">
+    <value>{0} não lidas</value>
+  </data>
+  <data name="nav.notifications.markAllAsRead" xml:space="preserve">
+    <value>Marcar como lidas</value>
+  </data>
+  <data name="nav.notifications.clearAll" xml:space="preserve">
+    <value>Limpar todas</value>
+  </data>
+  <data name="nav.notifications.emptyTitle" xml:space="preserve">
+    <value>Nenhuma notificação</value>
+  </data>
+  <data name="nav.notifications.emptyDescription" xml:space="preserve">
+    <value>Você está em dia!</value>
+  </data>
+  <data name="nav.notifications.viewAll" xml:space="preserve">
+    <value>Ver todas as notificações</value>
+  </data>
+  <data name="nav.time.now" xml:space="preserve">
+    <value>Agora</value>
+  </data>
+  <data name="nav.time.minutesAgo" xml:space="preserve">
+    <value>{0}m atrás</value>
+  </data>
+  <data name="nav.time.hoursAgo" xml:space="preserve">
+    <value>{0}h atrás</value>
+  </data>
+  <data name="nav.time.daysAgo" xml:space="preserve">
+    <value>{0}d atrás</value>
+  </data>
   <data name="pageLayout.action.add" xml:space="preserve">
     <value>Incluir</value>
   </data>

@@ -207,6 +207,111 @@
   <data name="common.toast.warningTitle" xml:space="preserve">
     <value>Warning</value>
   </data>
+  <data name="common.state.noResults" xml:space="preserve">
+    <value>No results</value>
+  </data>
+  <data name="common.state.noRecordsFound" xml:space="preserve">
+    <value>No records found</value>
+  </data>
+  <data name="common.state.adjustFilters" xml:space="preserve">
+    <value>Adjust filters, pagination, or search criteria to continue.</value>
+  </data>
+  <data name="common.action.cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="common.action.confirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="common.action.search" xml:space="preserve">
+    <value>Search...</value>
+  </data>
+  <data name="common.success.title" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="common.error.title" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="common.error.request" xml:space="preserve">
+    <value>Request error</value>
+  </data>
+  <data name="common.error.connection" xml:space="preserve">
+    <value>Connection error. Check your internet.</value>
+  </data>
+  <data name="common.error.unknown" xml:space="preserve">
+    <value>Unknown error</value>
+  </data>
+  <data name="common.validation.moreErrors" xml:space="preserve">
+    <value>And {0} more error(s).</value>
+  </data>
+  <data name="confirmModal.title" xml:space="preserve">
+    <value>Confirm action</value>
+  </data>
+  <data name="confirmModal.description" xml:space="preserve">
+    <value>Are you sure you want to continue?</value>
+  </data>
+  <data name="searchableSelect.placeholder" xml:space="preserve">
+    <value>Select an option</value>
+  </data>
+  <data name="searchableSelect.noResults" xml:space="preserve">
+    <value>No results found</value>
+  </data>
+  <data name="chart.empty" xml:space="preserve">
+    <value>No data available</value>
+  </data>
+  <data name="notifications.error.load" xml:space="preserve">
+    <value>Error loading notifications</value>
+  </data>
+  <data name="client.validation.single" xml:space="preserve">
+    <value>Form validation error</value>
+  </data>
+  <data name="client.validation.many" xml:space="preserve">
+    <value>{0} form validation errors</value>
+  </data>
+  <data name="nav.openSidebar" xml:space="preserve">
+    <value>Open sidebar</value>
+  </data>
+  <data name="nav.select" xml:space="preserve">
+    <value>Select</value>
+  </data>
+  <data name="nav.modules" xml:space="preserve">
+    <value>Modules</value>
+  </data>
+  <data name="nav.notifications" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="nav.notifications.unread.one" xml:space="preserve">
+    <value>{0} unread</value>
+  </data>
+  <data name="nav.notifications.unread.many" xml:space="preserve">
+    <value>{0} unread</value>
+  </data>
+  <data name="nav.notifications.markAllAsRead" xml:space="preserve">
+    <value>Mark all as read</value>
+  </data>
+  <data name="nav.notifications.clearAll" xml:space="preserve">
+    <value>Clear all</value>
+  </data>
+  <data name="nav.notifications.emptyTitle" xml:space="preserve">
+    <value>No notifications</value>
+  </data>
+  <data name="nav.notifications.emptyDescription" xml:space="preserve">
+    <value>You're all caught up!</value>
+  </data>
+  <data name="nav.notifications.viewAll" xml:space="preserve">
+    <value>View all notifications</value>
+  </data>
+  <data name="nav.time.now" xml:space="preserve">
+    <value>Now</value>
+  </data>
+  <data name="nav.time.minutesAgo" xml:space="preserve">
+    <value>{0}m ago</value>
+  </data>
+  <data name="nav.time.hoursAgo" xml:space="preserve">
+    <value>{0}h ago</value>
+  </data>
+  <data name="nav.time.daysAgo" xml:space="preserve">
+    <value>{0}d ago</value>
+  </data>
   <data name="pageLayout.action.add" xml:space="preserve">
     <value>Add</value>
   </data>

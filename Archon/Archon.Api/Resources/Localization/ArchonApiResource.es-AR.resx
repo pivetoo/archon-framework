@@ -102,6 +102,111 @@
   <data name="common.toast.warningTitle" xml:space="preserve">
     <value>Atención</value>
   </data>
+  <data name="common.state.noResults" xml:space="preserve">
+    <value>Sin resultados</value>
+  </data>
+  <data name="common.state.noRecordsFound" xml:space="preserve">
+    <value>No se encontraron registros</value>
+  </data>
+  <data name="common.state.adjustFilters" xml:space="preserve">
+    <value>Ajuste los filtros, la paginación o los criterios de búsqueda para continuar.</value>
+  </data>
+  <data name="common.action.cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="common.action.confirm" xml:space="preserve">
+    <value>Confirmar</value>
+  </data>
+  <data name="common.action.search" xml:space="preserve">
+    <value>Buscar...</value>
+  </data>
+  <data name="common.success.title" xml:space="preserve">
+    <value>Éxito</value>
+  </data>
+  <data name="common.error.title" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="common.error.request" xml:space="preserve">
+    <value>Error en la solicitud</value>
+  </data>
+  <data name="common.error.connection" xml:space="preserve">
+    <value>Error de conexión. Verifique su internet.</value>
+  </data>
+  <data name="common.error.unknown" xml:space="preserve">
+    <value>Error desconocido</value>
+  </data>
+  <data name="common.validation.moreErrors" xml:space="preserve">
+    <value>Y {0} error(es) más.</value>
+  </data>
+  <data name="confirmModal.title" xml:space="preserve">
+    <value>Confirmar acción</value>
+  </data>
+  <data name="confirmModal.description" xml:space="preserve">
+    <value>¿Está seguro de que desea continuar?</value>
+  </data>
+  <data name="searchableSelect.placeholder" xml:space="preserve">
+    <value>Seleccione una opción</value>
+  </data>
+  <data name="searchableSelect.noResults" xml:space="preserve">
+    <value>No se encontraron resultados</value>
+  </data>
+  <data name="chart.empty" xml:space="preserve">
+    <value>No hay datos disponibles</value>
+  </data>
+  <data name="notifications.error.load" xml:space="preserve">
+    <value>Error al cargar las notificaciones</value>
+  </data>
+  <data name="client.validation.single" xml:space="preserve">
+    <value>Error de validación en el formulario</value>
+  </data>
+  <data name="client.validation.many" xml:space="preserve">
+    <value>{0} errores de validación en el formulario</value>
+  </data>
+  <data name="nav.openSidebar" xml:space="preserve">
+    <value>Abrir menú lateral</value>
+  </data>
+  <data name="nav.select" xml:space="preserve">
+    <value>Seleccione</value>
+  </data>
+  <data name="nav.modules" xml:space="preserve">
+    <value>Módulos</value>
+  </data>
+  <data name="nav.notifications" xml:space="preserve">
+    <value>Notificaciones</value>
+  </data>
+  <data name="nav.notifications.unread.one" xml:space="preserve">
+    <value>{0} no leída</value>
+  </data>
+  <data name="nav.notifications.unread.many" xml:space="preserve">
+    <value>{0} no leídas</value>
+  </data>
+  <data name="nav.notifications.markAllAsRead" xml:space="preserve">
+    <value>Marcar como leídas</value>
+  </data>
+  <data name="nav.notifications.clearAll" xml:space="preserve">
+    <value>Limpiar todas</value>
+  </data>
+  <data name="nav.notifications.emptyTitle" xml:space="preserve">
+    <value>No hay notificaciones</value>
+  </data>
+  <data name="nav.notifications.emptyDescription" xml:space="preserve">
+    <value>¡Está al día!</value>
+  </data>
+  <data name="nav.notifications.viewAll" xml:space="preserve">
+    <value>Ver todas las notificaciones</value>
+  </data>
+  <data name="nav.time.now" xml:space="preserve">
+    <value>Ahora</value>
+  </data>
+  <data name="nav.time.minutesAgo" xml:space="preserve">
+    <value>Hace {0}m</value>
+  </data>
+  <data name="nav.time.hoursAgo" xml:space="preserve">
+    <value>Hace {0}h</value>
+  </data>
+  <data name="nav.time.daysAgo" xml:space="preserve">
+    <value>Hace {0}d</value>
+  </data>
   <data name="pageLayout.action.add" xml:space="preserve">
     <value>Agregar</value>
   </data>
