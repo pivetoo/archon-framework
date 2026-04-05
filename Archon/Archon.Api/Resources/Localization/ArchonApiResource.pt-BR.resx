@@ -99,4 +99,37 @@
   <data name="nav.theme.light" xml:space="preserve">
     <value>Modo Claro</value>
   </data>
+  <data name="common.toast.warningTitle" xml:space="preserve">
+    <value>Atenção</value>
+  </data>
+  <data name="pageLayout.action.add" xml:space="preserve">
+    <value>Incluir</value>
+  </data>
+  <data name="pageLayout.action.view" xml:space="preserve">
+    <value>Visualizar</value>
+  </data>
+  <data name="pageLayout.action.edit" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="pageLayout.action.delete" xml:space="preserve">
+    <value>Excluir</value>
+  </data>
+  <data name="pageLayout.action.refresh" xml:space="preserve">
+    <value>Atualizar</value>
+  </data>
+  <data name="pageLayout.edit.selectOne" xml:space="preserve">
+    <value>Selecione um registro para editar.</value>
+  </data>
+  <data name="pageLayout.edit.selectOnlyOne" xml:space="preserve">
+    <value>Selecione apenas um registro para editar.</value>
+  </data>
+  <data name="pageLayout.view.selectOne" xml:space="preserve">
+    <value>Selecione um registro para visualizar.</value>
+  </data>
+  <data name="pageLayout.view.selectOnlyOne" xml:space="preserve">
+    <value>Selecione apenas um registro para visualizar.</value>
+  </data>
+  <data name="pageLayout.delete.selectAtLeastOne" xml:space="preserve">
+    <value>Selecione ao menos um registro para excluir.</value>
+  </data>
 </root>

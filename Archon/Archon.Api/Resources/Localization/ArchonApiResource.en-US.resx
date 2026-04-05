@@ -204,4 +204,37 @@
   <data name="nav.theme.light" xml:space="preserve">
     <value>Light mode</value>
   </data>
+  <data name="common.toast.warningTitle" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="pageLayout.action.add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="pageLayout.action.view" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="pageLayout.action.edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="pageLayout.action.delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="pageLayout.action.refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="pageLayout.edit.selectOne" xml:space="preserve">
+    <value>Select one record to edit.</value>
+  </data>
+  <data name="pageLayout.edit.selectOnlyOne" xml:space="preserve">
+    <value>Select only one record to edit.</value>
+  </data>
+  <data name="pageLayout.view.selectOne" xml:space="preserve">
+    <value>Select one record to view.</value>
+  </data>
+  <data name="pageLayout.view.selectOnlyOne" xml:space="preserve">
+    <value>Select only one record to view.</value>
+  </data>
+  <data name="pageLayout.delete.selectAtLeastOne" xml:space="preserve">
+    <value>Select at least one record to delete.</value>
+  </data>
 </root>
