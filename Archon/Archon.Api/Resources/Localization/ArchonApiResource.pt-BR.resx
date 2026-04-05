@@ -13,37 +13,37 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="argument.invalid" xml:space="preserve">
-    <value>Argumento invalido.</value>
+    <value>Argumento inválido.</value>
   </data>
   <data name="file.content.required" xml:space="preserve">
-    <value>O conteudo do arquivo e obrigatorio.</value>
+    <value>O conteúdo do arquivo é obrigatório.</value>
   </data>
   <data name="auth.forbidden" xml:space="preserve">
     <value>Acesso negado.</value>
   </data>
   <data name="auth.session.invalidOrExpired" xml:space="preserve">
-    <value>Sessao invalida ou expirada.</value>
+    <value>Sessão inválida ou expirada.</value>
   </data>
   <data name="auth.token.validationFailed" xml:space="preserve">
-    <value>Falha na validacao do token.</value>
+    <value>Falha na validação do token.</value>
   </data>
   <data name="auth.token.validationFailedWithDetail" xml:space="preserve">
-    <value>Falha na validacao do token: {0}</value>
+    <value>Falha na validação do token: {0}</value>
   </data>
   <data name="request.id.required" xml:space="preserve">
-    <value>O identificador e obrigatorio.</value>
+    <value>O identificador é obrigatório.</value>
   </data>
   <data name="request.auditEntry.id.required" xml:space="preserve">
-    <value>O identificador do registro de auditoria e obrigatorio.</value>
+    <value>O identificador do registro de auditoria é obrigatório.</value>
   </data>
   <data name="request.entity.id.required" xml:space="preserve">
-    <value>O identificador da entidade e obrigatorio.</value>
+    <value>O identificador da entidade é obrigatório.</value>
   </data>
   <data name="request.entity.name.required" xml:space="preserve">
-    <value>O nome da entidade e obrigatorio.</value>
+    <value>O nome da entidade é obrigatório.</value>
   </data>
   <data name="operation.completed" xml:space="preserve">
-    <value>Operacao concluida com sucesso.</value>
+    <value>Operação concluída com sucesso.</value>
   </data>
   <data name="record.created" xml:space="preserve">
     <value>Registro criado com sucesso.</value>
@@ -52,19 +52,19 @@
     <value>Registro removido com sucesso.</value>
   </data>
   <data name="record.notFound" xml:space="preserve">
-    <value>Registro nao encontrado.</value>
+    <value>Registro não encontrado.</value>
   </data>
   <data name="record.auditEntry.notFound" xml:space="preserve">
-    <value>Registro de auditoria nao encontrado.</value>
+    <value>Registro de auditoria não encontrado.</value>
   </data>
   <data name="record.updated" xml:space="preserve">
     <value>Registro atualizado com sucesso.</value>
   </data>
   <data name="request.body.required" xml:space="preserve">
-    <value>O corpo da requisicao e obrigatorio.</value>
+    <value>O corpo da requisição é obrigatório.</value>
   </data>
   <data name="auth.unauthorized" xml:space="preserve">
-    <value>Nao autorizado.</value>
+    <value>Não autorizado.</value>
   </data>
   <data name="error.unexpected" xml:space="preserve">
     <value>Ocorreu um erro inesperado. Tente novamente mais tarde.</value>
@@ -73,15 +73,15 @@
     <value>Erro inesperado.</value>
   </data>
   <data name="error.integrity.violation" xml:space="preserve">
-    <value>Ocorreu uma violacao de integridade de dados.</value>
+    <value>Ocorreu uma violação de integridade de dados.</value>
   </data>
   <data name="tenant.notConfigured" xml:space="preserve">
-    <value>Nenhum tenant foi configurado para a requisicao atual.</value>
+    <value>Nenhum tenant foi configurado para a requisição atual.</value>
   </data>
   <data name="validation.failed" xml:space="preserve">
-    <value>Falha de validacao.</value>
+    <value>Falha de validação.</value>
   </data>
   <data name="validation.invalidValue" xml:space="preserve">
-    <value>Valor invalido.</value>
+    <value>Valor inválido.</value>
   </data>
 </root>
