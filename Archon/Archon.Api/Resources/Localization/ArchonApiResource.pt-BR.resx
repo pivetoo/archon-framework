@@ -84,4 +84,19 @@
   <data name="validation.invalidValue" xml:space="preserve">
     <value>Valor inválido.</value>
   </data>
+  <data name="nav.about" xml:space="preserve">
+    <value>Sobre</value>
+  </data>
+  <data name="nav.language" xml:space="preserve">
+    <value>Idioma</value>
+  </data>
+  <data name="nav.logout" xml:space="preserve">
+    <value>Sair</value>
+  </data>
+  <data name="nav.theme.dark" xml:space="preserve">
+    <value>Modo Escuro</value>
+  </data>
+  <data name="nav.theme.light" xml:space="preserve">
+    <value>Modo Claro</value>
+  </data>
 </root>

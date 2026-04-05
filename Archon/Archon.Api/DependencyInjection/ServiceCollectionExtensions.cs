@@ -13,11 +13,18 @@ namespace Archon.Api.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddArchonApi(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddArchonApi(this IServiceCollection services, IConfiguration configuration, params Type[] applicationResourceTypes)
         {
             services.AddLocalization(options =>
             {
-                options.ResourcesPath = "Resources/Localization";
+                options.ResourcesPath = "Resources";
+            });
+            services.AddSingleton(new LocalizationCatalogOptions
+            {
+                ResourceTypes = applicationResourceTypes
+                    .Where(type => type is not null)
+                    .Distinct()
+                    .ToArray()
             });
             services.Configure<ArchonLocalizationOptions>(configuration.GetSection("Archon:Localization"));
             services.AddSingleton<IConfigureOptions<RequestLocalizationOptions>, ConfigureRequestLocalizationOptions>();
