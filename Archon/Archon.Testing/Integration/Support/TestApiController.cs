@@ -34,12 +34,6 @@ namespace Archon.Testing.Integration.Support
         [PostEndpoint("validate")]
         public IActionResult ValidateRequest([FromBody] TestRequest request)
         {
-            IActionResult? validationResult = ValidateBody(request);
-            if (validationResult is not null)
-            {
-                return validationResult;
-            }
-
             return Http200(request, "Validated.");
         }
     }

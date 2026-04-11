@@ -1,5 +1,6 @@
 using Archon.Api.AccessSync;
 using Archon.Api.Localization;
+using Archon.Api.Validation;
 using Archon.Api.Security;
 using Archon.Api.Security.Authentication;
 using Archon.Application.Abstractions;
@@ -35,6 +36,11 @@ namespace Archon.Api.DependencyInjection
             {
                 options.SuppressModelStateInvalidFilter = true;
             });
+            services.Configure<MvcOptions>(options =>
+            {
+                options.Filters.AddService<ApiRequestValidationFilter>();
+            });
+            services.AddScoped<ApiRequestValidationFilter>();
             services.AddOpenApi();
 
             return services;

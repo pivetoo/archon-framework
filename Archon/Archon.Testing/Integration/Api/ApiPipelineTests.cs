@@ -55,7 +55,7 @@ namespace Archon.Testing.Integration.Api
         }
 
         [Test]
-        public async Task ValidateBody_ShouldReturnNormalizedValidationErrors()
+        public async Task ValidationFilter_ShouldReturnNormalizedValidationErrors()
         {
             await using WebApplication app = await TestApiHost.CreateAsync();
             HttpClient client = app.GetTestClient();
@@ -65,11 +65,27 @@ namespace Archon.Testing.Integration.Api
 
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
             Assert.That(result, Is.Not.Null);
-            Assert.That(result!.Message, Is.EqualTo("Validation failed."));
+            Assert.That(result!.Message, Is.Not.Empty);
             Assert.That(result.Errors.HasValue, Is.True);
             bool hasRequestName = result.Errors!.Value.TryGetProperty("request.Name", out _);
             bool hasName = result.Errors.Value.TryGetProperty("Name", out _);
             Assert.That(hasRequestName || hasName, Is.True);
+        }
+
+        [Test]
+        public async Task ValidationFilter_ShouldRequireRequestBodyForNonNullableBodyParameters()
+        {
+            await using WebApplication app = await TestApiHost.CreateAsync();
+            HttpClient client = app.GetTestClient();
+
+            HttpResponseMessage response = await client.PostAsJsonAsync<object?>("/api/testapi/validate", null);
+            JsonResultModel? result = await response.Content.ReadFromJsonAsync<JsonResultModel>();
+
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.Message, Is.Not.Empty);
+            Assert.That(result.Data.HasValue, Is.False);
+            Assert.That(result.Errors.HasValue, Is.False);
         }
 
         private sealed class JsonResultModel

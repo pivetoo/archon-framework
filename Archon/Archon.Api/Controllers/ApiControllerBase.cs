@@ -1,5 +1,6 @@
-using Archon.Application.Abstractions;
 using Archon.Api.Localization;
+using Archon.Api.Validation;
+using Archon.Application.Abstractions;
 using Archon.Core.Pagination;
 using Archon.Core.Responses;
 using Microsoft.AspNetCore.Mvc;
@@ -26,17 +27,7 @@ namespace Archon.Api.Controllers
 
         protected virtual IActionResult? ValidateBody(object? body)
         {
-            if (body is null)
-            {
-                return Http400(Localizer["request.body.required"]);
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return Http400(Localizer["validation.failed"], NormalizeModelStateErrors(ModelState, Localizer));
-            }
-
-            return null;
+            return ApiRequestValidator.Validate(body, bodyRequired: true, ModelState, Localizer);
         }
 
         protected IActionResult Http200(object? data = null, string? message = null)
@@ -144,7 +135,7 @@ namespace Archon.Api.Controllers
             return SendFile(content, "text/csv", fileName);
         }
 
-        private static ApiResponse CreateResponse(string? message = null, object? data = null, object? errors = null, object? pagination = null)
+        internal static ApiResponse CreateResponse(string? message = null, object? data = null, object? errors = null, object? pagination = null)
         {
             return new ApiResponse
             {
@@ -155,7 +146,7 @@ namespace Archon.Api.Controllers
             };
         }
 
-        private static Dictionary<string, IReadOnlyCollection<string>> NormalizeModelStateErrors(ModelStateDictionary modelState, IStringLocalizer<ArchonApiResource> localizer)
+        internal static Dictionary<string, IReadOnlyCollection<string>> NormalizeModelStateErrors(ModelStateDictionary modelState, IStringLocalizer<ArchonApiResource> localizer)
         {
             return modelState
                 .Where(item => item.Value?.Errors.Count > 0)
