@@ -9,7 +9,7 @@ namespace Archon.Api.Attributes
         {
         }
 
-        public GetEndpointAttribute(string template) : base(template)
+        public GetEndpointAttribute(string template) : base(EndpointRouteTemplate.Normalize(template))
         {
         }
     }
@@ -21,7 +21,7 @@ namespace Archon.Api.Attributes
         {
         }
 
-        public PostEndpointAttribute(string template) : base(template)
+        public PostEndpointAttribute(string template) : base(EndpointRouteTemplate.Normalize(template))
         {
         }
     }
@@ -33,7 +33,7 @@ namespace Archon.Api.Attributes
         {
         }
 
-        public PutEndpointAttribute(string template) : base(template)
+        public PutEndpointAttribute(string template) : base(EndpointRouteTemplate.Normalize(template))
         {
         }
     }
@@ -45,7 +45,7 @@ namespace Archon.Api.Attributes
         {
         }
 
-        public DeleteEndpointAttribute(string template) : base(template)
+        public DeleteEndpointAttribute(string template) : base(EndpointRouteTemplate.Normalize(template))
         {
         }
     }
@@ -57,8 +57,9 @@ namespace Archon.Api.Attributes
         {
         }
 
-        public PatchEndpointAttribute(string template) : base(template)
+        public PatchEndpointAttribute(string template) : base(EndpointRouteTemplate.Normalize(template))
         {
         }
     }
+
 }

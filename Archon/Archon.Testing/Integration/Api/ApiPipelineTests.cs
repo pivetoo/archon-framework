@@ -88,6 +88,21 @@ namespace Archon.Testing.Integration.Api
             Assert.That(result.Errors.HasValue, Is.False);
         }
 
+        [Test]
+        public async Task EndpointTemplate_ShouldPrefixActionWhenTemplateStartsWithRouteParameter()
+        {
+            await using WebApplication app = await TestApiHost.CreateAsync();
+            HttpClient client = app.GetTestClient();
+
+            HttpResponseMessage response = await client.GetAsync("/api/testapi/getbyid/42");
+            JsonResultModel? result = await response.Content.ReadFromJsonAsync<JsonResultModel>();
+
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.Data.HasValue, Is.True);
+            Assert.That(result.Data!.Value.GetProperty("id").GetString(), Is.EqualTo("42"));
+        }
+
         private sealed class JsonResultModel
         {
             public string Message { get; init; } = string.Empty;

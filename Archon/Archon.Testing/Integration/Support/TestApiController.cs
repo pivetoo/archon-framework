@@ -36,6 +36,15 @@ namespace Archon.Testing.Integration.Support
         {
             return Http200(request, "Validated.");
         }
+
+        [GetEndpoint("{id}")]
+        public IActionResult GetById(string id)
+        {
+            return Http200(new
+            {
+                Id = id
+            });
+        }
     }
 
     public sealed class TestRequest
