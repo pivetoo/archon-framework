@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Archon.Application\Archon.Application.csproj" />
+    <ProjectReference Include="..\Archon.Core\Archon.Core.csproj" />
     <ProjectReference Include="..\Archon.Infrastructure\Archon.Infrastructure.csproj" />
   </ItemGroup>
 
