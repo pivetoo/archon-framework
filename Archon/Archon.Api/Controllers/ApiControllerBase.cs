@@ -25,6 +25,10 @@ namespace Archon.Api.Controllers
 
         protected string? CurrentClientId => CurrentUser.ClientId;
 
+        protected string RequestIpAddress => HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+
+        protected string RequestUserAgent => Request.Headers.UserAgent.FirstOrDefault() ?? "unknown";
+
         protected virtual IActionResult? ValidateBody(object? body)
         {
             return ApiRequestValidator.Validate(body, bodyRequired: true, ModelState, Localizer);

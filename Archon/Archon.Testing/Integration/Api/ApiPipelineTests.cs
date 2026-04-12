@@ -60,7 +60,7 @@ namespace Archon.Testing.Integration.Api
             await using WebApplication app = await TestApiHost.CreateAsync();
             HttpClient client = app.GetTestClient();
 
-            HttpResponseMessage response = await client.PostAsJsonAsync("/api/testapi/validate", new { Name = "" });
+            HttpResponseMessage response = await client.PostAsJsonAsync("/api/testapi/validaterequest", new { Name = "" });
             JsonResultModel? result = await response.Content.ReadFromJsonAsync<JsonResultModel>();
 
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
@@ -78,7 +78,7 @@ namespace Archon.Testing.Integration.Api
             await using WebApplication app = await TestApiHost.CreateAsync();
             HttpClient client = app.GetTestClient();
 
-            HttpResponseMessage response = await client.PostAsJsonAsync<object?>("/api/testapi/validate", null);
+            HttpResponseMessage response = await client.PostAsJsonAsync<object?>("/api/testapi/validaterequest", null);
             JsonResultModel? result = await response.Content.ReadFromJsonAsync<JsonResultModel>();
 
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));

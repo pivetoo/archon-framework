@@ -31,7 +31,7 @@ namespace Archon.Testing.Integration.Support
             throw new InvalidOperationException("Invalid request.");
         }
 
-        [PostEndpoint("validate")]
+        [PostEndpoint]
         public IActionResult ValidateRequest([FromBody] TestRequest request)
         {
             return Http200(request, "Validated.");

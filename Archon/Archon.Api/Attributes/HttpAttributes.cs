@@ -5,7 +5,7 @@ namespace Archon.Api.Attributes
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class GetEndpointAttribute : HttpGetAttribute
     {
-        public GetEndpointAttribute() : base()
+        public GetEndpointAttribute() : base("[action]")
         {
         }
 
@@ -17,7 +17,7 @@ namespace Archon.Api.Attributes
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class PostEndpointAttribute : HttpPostAttribute
     {
-        public PostEndpointAttribute() : base()
+        public PostEndpointAttribute() : base("[action]")
         {
         }
 
@@ -29,7 +29,7 @@ namespace Archon.Api.Attributes
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class PutEndpointAttribute : HttpPutAttribute
     {
-        public PutEndpointAttribute() : base()
+        public PutEndpointAttribute() : base("[action]")
         {
         }
 
@@ -41,7 +41,7 @@ namespace Archon.Api.Attributes
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class DeleteEndpointAttribute : HttpDeleteAttribute
     {
-        public DeleteEndpointAttribute() : base()
+        public DeleteEndpointAttribute() : base("[action]")
         {
         }
 
@@ -53,7 +53,7 @@ namespace Archon.Api.Attributes
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class PatchEndpointAttribute : HttpPatchAttribute
     {
-        public PatchEndpointAttribute() : base()
+        public PatchEndpointAttribute() : base("[action]")
         {
         }
 
