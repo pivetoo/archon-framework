@@ -68,7 +68,7 @@ namespace Archon.Infrastructure.IdentityManagement
         {
             ArgumentNullException.ThrowIfNull(resources);
 
-            HttpResponseMessage response = await httpClient.PostAsJsonAsync("/api/access-resources/sync", resources, cancellationToken);
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync("/api/AccessResources/Sync", resources, cancellationToken);
             response.EnsureSuccessStatusCode();
         }
     }
