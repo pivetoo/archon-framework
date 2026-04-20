@@ -74,6 +74,7 @@ namespace Archon.Infrastructure.DependencyInjection
             JwtOptions jwtOptions = new JwtOptions();
             configuration.GetSection("Jwt").Bind(jwtOptions);
 
+            services.AddMemoryCache();
             services.AddSingleton(Options.Create(identityManagementOptions));
             services.AddSingleton(Options.Create(jwtOptions));
             services.AddHttpClient<IdentityManagementClient>();
