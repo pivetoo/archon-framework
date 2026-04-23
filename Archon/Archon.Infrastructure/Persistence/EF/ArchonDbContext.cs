@@ -1,5 +1,7 @@
 using Archon.Core.Entities;
+using Archon.Core.Events;
 using Archon.Application.Abstractions;
+using Archon.Application.Events;
 using Archon.Application.MultiTenancy;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
@@ -10,13 +12,21 @@ namespace Archon.Infrastructure.Persistence.EF
     {
         private readonly IReadOnlyCollection<Assembly> modelAssemblies;
         private readonly ArchonAuditManager auditManager;
+        private readonly IDomainEventDispatcher? domainEventDispatcher;
         private readonly string? schema;
         private bool isAuditing;
 
-        public ArchonDbContext(DbContextOptions<ArchonDbContext> options, ModelAssemblyRegistry modelAssemblyRegistry, ICurrentUser? currentUser = null, ITenantContext? tenantContext = null, string? schema = null) : base(options)
+        public ArchonDbContext(
+            DbContextOptions<ArchonDbContext> options,
+            ModelAssemblyRegistry modelAssemblyRegistry,
+            ICurrentUser? currentUser = null,
+            ITenantContext? tenantContext = null,
+            IDomainEventDispatcher? domainEventDispatcher = null,
+            string? schema = null) : base(options)
         {
             modelAssemblies = modelAssemblyRegistry.Assemblies;
             auditManager = new ArchonAuditManager(ChangeTracker, currentUser, tenantContext);
+            this.domainEventDispatcher = domainEventDispatcher;
             this.schema = schema;
         }
 
@@ -74,17 +84,37 @@ namespace Archon.Infrastructure.Persistence.EF
                 return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
             }
 
+            List<IDomainEvent> domainEvents = CollectDomainEvents();
             auditManager.ApplyEntityTimestamps();
             List<AuditEntry> auditEntries = auditManager.CreateAuditEntries();
             int result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
 
-            if (auditEntries.Count == 0)
+            if (auditEntries.Count > 0)
             {
-                return result;
+                await PersistAuditEntriesAsync(auditEntries, cancellationToken);
             }
 
-            await PersistAuditEntriesAsync(auditEntries, cancellationToken);
+            if (domainEvents.Count > 0 && domainEventDispatcher is not null)
+            {
+                await domainEventDispatcher.DispatchAsync(domainEvents, cancellationToken);
+            }
+
             return result;
+        }
+
+        private List<IDomainEvent> CollectDomainEvents()
+        {
+            List<IDomainEvent> domainEvents = ChangeTracker
+                .Entries<Entity>()
+                .SelectMany(entry => entry.Entity.DomainEvents)
+                .ToList();
+
+            ChangeTracker
+                .Entries<Entity>()
+                .ToList()
+                .ForEach(entry => entry.Entity.ClearDomainEvents());
+
+            return domainEvents;
         }
 
         private async Task PersistAuditEntriesAsync(IReadOnlyCollection<AuditEntry> auditEntries, CancellationToken cancellationToken)

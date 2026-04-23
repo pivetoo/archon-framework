@@ -1,9 +1,11 @@
 using Archon.Application.Abstractions;
+using Archon.Application.Events;
 using Archon.Application.MultiTenancy;
 using Archon.Application.Persistence;
 using Archon.Application.Services;
 using Archon.Core.ValueObjects;
 using Archon.Infrastructure.BackgroundJobs;
+using Archon.Infrastructure.Events;
 using Archon.Infrastructure.IdentityManagement;
 using Archon.Infrastructure.Migrations;
 using Archon.Infrastructure.MultiTenancy;
@@ -49,11 +51,12 @@ namespace Archon.Infrastructure.DependencyInjection
                 ITenantContext tenantContext = provider.GetRequiredService<ITenantContext>();
                 ModelAssemblyRegistry modelAssemblyRegistry = provider.GetRequiredService<ModelAssemblyRegistry>();
                 ICurrentUser? currentUser = provider.GetService<ICurrentUser>();
+                IDomainEventDispatcher? domainEventDispatcher = provider.GetService<IDomainEventDispatcher>();
 
                 (string connectionString, DatabaseProvider databaseProvider, string? schema) = ResolveCurrentTenant(tenantContext, tenantDatabaseOptions);
                 DbContextOptions<ArchonDbContext> options = DbContextOptionsFactory.Create(connectionString, databaseProvider);
 
-                return new ArchonDbContext(options, modelAssemblyRegistry, currentUser, tenantContext, schema);
+                return new ArchonDbContext(options, modelAssemblyRegistry, currentUser, tenantContext, domainEventDispatcher, schema);
             });
 
             services.AddScoped<DbContext>(provider => provider.GetRequiredService<ArchonDbContext>());
@@ -62,6 +65,17 @@ namespace Archon.Infrastructure.DependencyInjection
             services.AddScoped<AuditService>();
             services.AddScoped(typeof(ICrudService<>), typeof(CrudService<>));
             services.AddScoped(typeof(CrudService<>));
+            services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+
+            foreach (Assembly assembly in modelAssemblies.Where(a => a is not null))
+            {
+                services.Scan(scan => scan
+                    .FromAssemblies(assembly)
+                    .AddClasses(classes => classes
+                        .AssignableTo(typeof(IDomainEventHandler<>)))
+                    .AsImplementedInterfaces()
+                    .WithScopedLifetime());
+            }
 
             return services;
         }

@@ -1,12 +1,18 @@
+using Archon.Core.Events;
+
 namespace Archon.Core.Entities
 {
     public abstract class Entity
     {
+        private readonly List<IDomainEvent> domainEvents = [];
+
         public long Id { get; protected set; }
 
         public DateTimeOffset CreatedAt { get; protected set; }
 
         public DateTimeOffset? UpdatedAt { get; protected set; }
+
+        public IReadOnlyCollection<IDomainEvent> DomainEvents => domainEvents.AsReadOnly();
 
         public void SetCreatedAt(DateTimeOffset createdAt)
         {
@@ -17,6 +23,23 @@ namespace Archon.Core.Entities
         public void SetUpdatedAt(DateTimeOffset updatedAt)
         {
             UpdatedAt = updatedAt;
+        }
+
+        public void AddDomainEvent(IDomainEvent domainEvent)
+        {
+            ArgumentNullException.ThrowIfNull(domainEvent);
+            domainEvents.Add(domainEvent);
+        }
+
+        public void RemoveDomainEvent(IDomainEvent domainEvent)
+        {
+            ArgumentNullException.ThrowIfNull(domainEvent);
+            domainEvents.Remove(domainEvent);
+        }
+
+        public void ClearDomainEvents()
+        {
+            domainEvents.Clear();
         }
 
         public override bool Equals(object? obj)

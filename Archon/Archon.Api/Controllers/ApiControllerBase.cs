@@ -39,6 +39,11 @@ namespace Archon.Api.Controllers
             return StatusCode(StatusCodes.Status200OK, CreateResponse(message, data));
         }
 
+        protected IActionResult Http200<T>(T data, string? message = null)
+        {
+            return StatusCode(StatusCodes.Status200OK, CreateResponse<T>(message, data));
+        }
+
         protected IActionResult Http200<T>(PagedResult<T> pagedResult, string? message = null)
         {
             return StatusCode(StatusCodes.Status200OK, CreateResponse(message, pagedResult.Items, pagination: pagedResult.Pagination));
@@ -49,9 +54,19 @@ namespace Archon.Api.Controllers
             return StatusCode(StatusCodes.Status201Created, CreateResponse(message, data));
         }
 
+        protected IActionResult Http201<T>(T data, string? message = null)
+        {
+            return StatusCode(StatusCodes.Status201Created, CreateResponse<T>(message, data));
+        }
+
         protected IActionResult Http202(object? data = null, string? message = null)
         {
             return StatusCode(StatusCodes.Status202Accepted, CreateResponse(message, data));
+        }
+
+        protected IActionResult Http202<T>(T data, string? message = null)
+        {
+            return StatusCode(StatusCodes.Status202Accepted, CreateResponse<T>(message, data));
         }
 
         protected IActionResult Http204()
@@ -142,6 +157,17 @@ namespace Archon.Api.Controllers
         internal static ApiResponse CreateResponse(string? message = null, object? data = null, object? errors = null, object? pagination = null)
         {
             return new ApiResponse
+            {
+                Message = message ?? string.Empty,
+                Data = data,
+                Errors = errors,
+                Pagination = pagination
+            };
+        }
+
+        internal static ApiResponse<T> CreateResponse<T>(string? message = null, T? data = default, object? errors = null, object? pagination = null)
+        {
+            return new ApiResponse<T>
             {
                 Message = message ?? string.Empty,
                 Data = data,

@@ -44,5 +44,46 @@ namespace Archon.Testing.Unit.Core.Responses
             Assert.That(json, Does.Contain("error-1"));
             Assert.That(json, Does.Contain("\"Page\":1").Or.Contain("\"page\":1"));
         }
+
+        [Test]
+        public void Serialize_Generic_ShouldProduceSameJsonAsNonGeneric()
+        {
+            ApiResponse<UserDto> genericResponse = new ApiResponse<UserDto>
+            {
+                Message = "Completed.",
+                Data = new UserDto { Id = 10, Name = "Test" }
+            };
+
+            ApiResponse nonGenericResponse = new ApiResponse
+            {
+                Message = "Completed.",
+                Data = new UserDto { Id = 10, Name = "Test" }
+            };
+
+            string genericJson = JsonSerializer.Serialize(genericResponse);
+            string nonGenericJson = JsonSerializer.Serialize(nonGenericResponse);
+
+            Assert.That(genericJson, Is.EqualTo(nonGenericJson));
+        }
+
+        [Test]
+        public void Serialize_Generic_ShouldIgnoreNullData()
+        {
+            ApiResponse<UserDto> response = new ApiResponse<UserDto>
+            {
+                Message = "Completed."
+            };
+
+            string json = JsonSerializer.Serialize(response);
+
+            Assert.That(json, Does.Not.Contain("Data"));
+            Assert.That(json, Does.Not.Contain("data"));
+        }
+
+        private sealed class UserDto
+        {
+            public int Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+        }
     }
 }
