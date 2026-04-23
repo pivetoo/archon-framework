@@ -48,7 +48,7 @@ namespace Archon.Infrastructure.Persistence.EF
         public List<AuditEntry> CreateAuditEntries()
         {
             string? correlationId = ResolveCorrelationId();
-            string? changedBy = currentUser?.UserId?.ToString();
+            string? changedBy = currentUser?.Email;
             string? tenantId = tenantContext?.TenantId;
             DateTimeOffset changedAt = DateTimeOffset.UtcNow;
 
