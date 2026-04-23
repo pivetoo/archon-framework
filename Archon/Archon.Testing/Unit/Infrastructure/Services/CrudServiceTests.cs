@@ -1,10 +1,7 @@
-using Archon.Application.Abstractions;
-using Archon.Application.MultiTenancy;
 using Archon.Core.Entities;
 using Archon.Core.Exceptions;
-using Archon.Core.ValueObjects;
-using Archon.Infrastructure.Persistence.EF;
 using Archon.Infrastructure.Services;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Archon.Testing.Unit.Infrastructure.Services
@@ -13,11 +10,16 @@ namespace Archon.Testing.Unit.Infrastructure.Services
     {
         private TestDbContext CreateContext()
         {
+            SqliteConnection connection = new SqliteConnection("DataSource=:memory:");
+            connection.Open();
+
             DbContextOptions<TestDbContext> options = new DbContextOptionsBuilder<TestDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .UseSqlite(connection)
                 .Options;
 
-            return new TestDbContext(options);
+            TestDbContext context = new TestDbContext(options);
+            context.Database.EnsureCreated();
+            return context;
         }
 
         [Test]
@@ -78,10 +80,11 @@ namespace Archon.Testing.Unit.Infrastructure.Services
             TestEntity entity = new TestEntity { Name = "Original" };
             context.Entities.Add(entity);
             await context.SaveChangesAsync();
+            long originalId = entity.Id;
 
             TestCrudService service = new(context);
             TestEntity updatedEntity = new TestEntity { Name = "Updated" };
-            typeof(Entity).GetProperty("Id")!.SetValue(updatedEntity, entity.Id);
+            typeof(Entity).GetProperty("Id")!.SetValue(updatedEntity, originalId);
 
             TestEntity? result = await service.Update(updatedEntity);
 
@@ -109,14 +112,18 @@ namespace Archon.Testing.Unit.Infrastructure.Services
         {
             using TestDbContext context = CreateContext();
             TestEntity entity = new TestEntity { Name = "ToDelete" };
+            typeof(Entity).GetProperty("Id")!.SetValue(entity, 42L);
             context.Entities.Add(entity);
             await context.SaveChangesAsync();
+            context.Entry(entity).State = EntityState.Detached;
+
+            Assert.That(await context.Entities.AnyAsync(e => e.Id == 42L), Is.True, "Entity should exist before deletion");
 
             TestCrudService service = new(context);
-            TestEntity? result = await service.Delete(entity.Id);
+            TestEntity? result = await service.Delete(42L);
 
-            Assert.That(result, Is.Not.Null);
-            Assert.That(await context.Entities.AnyAsync(e => e.Id == entity.Id), Is.False);
+            Assert.That(result, Is.Not.Null, $"Delete returned null. Messages: {service.GetErrorMessages()}");
+            Assert.That(await context.Entities.AnyAsync(e => e.Id == 42L), Is.False);
         }
 
         [Test]
@@ -248,6 +255,7 @@ namespace Archon.Testing.Unit.Infrastructure.Services
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
+                modelBuilder.Entity<TestEntity>().Property(e => e.Id).ValueGeneratedOnAdd();
                 modelBuilder.Entity<TestEntity>().HasKey(e => e.Id);
             }
         }
