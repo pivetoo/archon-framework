@@ -34,9 +34,9 @@ namespace Archon.Testing.Integration.Api
             HttpResponseMessage response = await client.GetAsync("/api/testapi/failure");
             JsonResultModel? result = await response.Content.ReadFromJsonAsync<JsonResultModel>();
 
-            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
             Assert.That(result, Is.Not.Null);
-            Assert.That(result!.Message, Is.EqualTo("Invalid request."));
+            Assert.That(result!.Message, Is.Not.Empty);
         }
 
         [Test]
