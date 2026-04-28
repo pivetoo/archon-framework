@@ -27,18 +27,17 @@ namespace Archon.Infrastructure.IdentityManagement
                 throw new InvalidOperationException("IdentityManagement:Authority is not configured.");
             }
 
-            if (string.IsNullOrWhiteSpace(identityManagementOptions.IntegrationSecret))
-            {
-                throw new InvalidOperationException("IdentityManagement:IntegrationSecret is not configured.");
-            }
-
             clientLookupCacheTtl = identityManagementOptions.ClientLookupCacheTtl > TimeSpan.Zero
                 ? identityManagementOptions.ClientLookupCacheTtl
                 : TimeSpan.FromMinutes(5);
 
             this.httpClient.BaseAddress = new Uri(identityManagementOptions.Authority, UriKind.Absolute);
-            this.httpClient.DefaultRequestHeaders.Remove("X-Integration-Secret");
-            this.httpClient.DefaultRequestHeaders.Add("X-Integration-Secret", identityManagementOptions.IntegrationSecret);
+
+            if (!string.IsNullOrWhiteSpace(identityManagementOptions.IntegrationSecret))
+            {
+                this.httpClient.DefaultRequestHeaders.Remove("X-Integration-Secret");
+                this.httpClient.DefaultRequestHeaders.Add("X-Integration-Secret", identityManagementOptions.IntegrationSecret);
+            }
         }
 
         public async Task<IdentityManagementApplicationInfo?> GetApplicationByClientIdAsync(string clientId, CancellationToken cancellationToken = default)
