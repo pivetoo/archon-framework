@@ -19,6 +19,8 @@ namespace Archon.Infrastructure.MultiTenancy
 
         public string? Schema { get; init; }
 
+        public string? IntegrationSecret { get; init; }
+
         public DatabaseProvider GetDatabaseProvider()
         {
             return DatabaseType.Trim().ToLowerInvariant() switch

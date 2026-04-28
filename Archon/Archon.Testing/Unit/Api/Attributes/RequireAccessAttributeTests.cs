@@ -5,7 +5,11 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
+using Archon.Application.MultiTenancy;
+using Archon.Infrastructure.MultiTenancy;
 
 namespace Archon.Testing.Unit.Api.Attributes
 {
@@ -43,6 +47,78 @@ namespace Archon.Testing.Unit.Api.Attributes
             attribute.OnAuthorization(context);
 
             Assert.That(context.Result, Is.Null);
+        }
+
+        [Test]
+        public void OnAuthorization_ShouldAllow_UnauthenticatedWithValidIntegrationSecretAndResolveTenant()
+        {
+            DefaultHttpContext httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["X-Integration-Secret"] = "tenant1-secret";
+            httpContext.RequestServices = CreateServiceProviderWithTenantResolver();
+
+            ControllerActionDescriptor actionDescriptor = new ControllerActionDescriptor
+            {
+                ControllerName = "Test",
+                ActionName = "Action",
+                MethodInfo = typeof(TestController).GetMethod("Action")!
+            };
+
+            ActionContext actionContext = new ActionContext(httpContext, new RouteData(), actionDescriptor);
+            AuthorizationFilterContext context = new AuthorizationFilterContext(actionContext, []);
+
+            RequireAccessAttribute attribute = new RequireAccessAttribute();
+
+            attribute.OnAuthorization(context);
+
+            Assert.That(context.Result, Is.Null);
+            Assert.That(httpContext.Items["TenantId"], Is.EqualTo("tenant1"));
+        }
+
+        [Test]
+        public void OnAuthorization_ShouldReturnUnauthorized_UnauthenticatedWithInvalidIntegrationSecret()
+        {
+            DefaultHttpContext httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["X-Integration-Secret"] = "invalid-secret";
+            httpContext.RequestServices = CreateServiceProviderWithTenantResolver();
+
+            ControllerActionDescriptor actionDescriptor = new ControllerActionDescriptor
+            {
+                ControllerName = "Test",
+                ActionName = "Action",
+                MethodInfo = typeof(TestController).GetMethod("Action")!
+            };
+
+            ActionContext actionContext = new ActionContext(httpContext, new RouteData(), actionDescriptor);
+            AuthorizationFilterContext context = new AuthorizationFilterContext(actionContext, []);
+
+            RequireAccessAttribute attribute = new RequireAccessAttribute();
+
+            attribute.OnAuthorization(context);
+
+            Assert.That(context.Result, Is.InstanceOf<UnauthorizedResult>());
+        }
+
+        [Test]
+        public void OnAuthorization_ShouldReturnUnauthorized_UnauthenticatedWithMissingIntegrationSecret()
+        {
+            DefaultHttpContext httpContext = new DefaultHttpContext();
+            httpContext.RequestServices = CreateServiceProviderWithTenantResolver();
+
+            ControllerActionDescriptor actionDescriptor = new ControllerActionDescriptor
+            {
+                ControllerName = "Test",
+                ActionName = "Action",
+                MethodInfo = typeof(TestController).GetMethod("Action")!
+            };
+
+            ActionContext actionContext = new ActionContext(httpContext, new RouteData(), actionDescriptor);
+            AuthorizationFilterContext context = new AuthorizationFilterContext(actionContext, []);
+
+            RequireAccessAttribute attribute = new RequireAccessAttribute();
+
+            attribute.OnAuthorization(context);
+
+            Assert.That(context.Result, Is.InstanceOf<UnauthorizedResult>());
         }
 
         [Test]
@@ -112,6 +188,32 @@ namespace Archon.Testing.Unit.Api.Attributes
             attribute.OnAuthorization(context);
 
             Assert.That(context.Result, Is.InstanceOf<ForbidResult>());
+        }
+
+        private static IServiceProvider CreateServiceProvider(IConfiguration configuration)
+        {
+            ServiceCollection services = new ServiceCollection();
+            services.AddSingleton(configuration);
+            return services.BuildServiceProvider();
+        }
+
+        private static IServiceProvider CreateServiceProviderWithTenantResolver()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "TenantDatabases:tenant1:ConnectionString", "Host=localhost;Database=db1;" },
+                    { "TenantDatabases:tenant1:IntegrationSecret", "tenant1-secret" },
+                    { "TenantDatabases:tenant2:ConnectionString", "Host=localhost;Database=db2;" },
+                    { "TenantDatabases:tenant2:IntegrationSecret", "tenant2-secret" }
+                })
+                .Build();
+
+            ServiceCollection services = new ServiceCollection();
+            services.AddSingleton(configuration);
+            services.AddSingleton<ITenantResolver, ConfigurationTenantResolver>();
+            services.AddSingleton<ITenantContext, MultiTenantContext>();
+            return services.BuildServiceProvider();
         }
 
         private class TestController

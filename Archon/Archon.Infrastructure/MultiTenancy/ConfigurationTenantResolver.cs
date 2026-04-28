@@ -55,6 +55,26 @@ namespace Archon.Infrastructure.MultiTenancy
             return null;
         }
 
+        public Task<TenantInfo?> ResolveBySecretAsync(string? integrationSecret, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(integrationSecret))
+            {
+                return Task.FromResult<TenantInfo?>(null);
+            }
+
+            IConfigurationSection tenantDatabasesSection = configuration.GetSection("TenantDatabases");
+            foreach (IConfigurationSection tenantSection in tenantDatabasesSection.GetChildren())
+            {
+                string? configuredSecret = tenantSection["IntegrationSecret"];
+                if (string.Equals(configuredSecret, integrationSecret, StringComparison.Ordinal))
+                {
+                    return Task.FromResult(CreateTenantInfo(tenantSection));
+                }
+            }
+
+            return Task.FromResult<TenantInfo?>(null);
+        }
+
         private static TenantInfo? CreateTenantInfo(IConfigurationSection tenantSection)
         {
             string? connectionString = tenantSection["ConnectionString"];
@@ -72,7 +92,8 @@ namespace Archon.Infrastructure.MultiTenancy
                 ApplicationId = option.ApplicationId,
                 ConnectionString = connectionString,
                 Schema = option.Schema,
-                DatabaseProvider = option.GetDatabaseProvider()
+                DatabaseProvider = option.GetDatabaseProvider(),
+                IntegrationSecret = option.IntegrationSecret
             };
         }
     }
