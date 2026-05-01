@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 namespace Archon.Api.Security.Authentication
 {
@@ -21,28 +20,31 @@ namespace Archon.Api.Security.Authentication
         public async Task<ClaimsPrincipal?> ValidateTokenAsync(string token, CancellationToken cancellationToken = default)
         {
             JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            JwtSecurityToken jwtSecurityToken = tokenHandler.ReadJwtToken(token);
+            OpenIdConnectConfigurationInfo? configuration = await identityManagementClient.GetOpenIdConfigurationAsync(cancellationToken);
+            IReadOnlyCollection<SecurityKey> signingKeys = await identityManagementClient.GetSigningKeysAsync(cancellationToken);
 
-            string? clientId = jwtSecurityToken.Claims.FirstOrDefault(claim => claim.Type == "client_id")?.Value;
-            if (string.IsNullOrWhiteSpace(clientId))
+            if (signingKeys.Count == 0)
             {
                 return null;
             }
 
-            IdentityManagementApplicationInfo? application = await identityManagementClient.GetApplicationByClientIdAsync(clientId, cancellationToken);
-            if (application is null || string.IsNullOrWhiteSpace(application.JwtSecretKey))
+            string issuer = !string.IsNullOrWhiteSpace(jwtOptions.Issuer)
+                ? jwtOptions.Issuer
+                : configuration?.Issuer ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(issuer) || string.IsNullOrWhiteSpace(jwtOptions.Audience))
             {
                 return null;
             }
 
             TokenValidationParameters validationParameters = new TokenValidationParameters
             {
-                ValidateIssuer = !string.IsNullOrWhiteSpace(jwtOptions.Issuer),
-                ValidIssuer = jwtOptions.Issuer,
-                ValidateAudience = !string.IsNullOrWhiteSpace(jwtOptions.Audience),
+                ValidateIssuer = true,
+                ValidIssuer = issuer,
+                ValidateAudience = true,
                 ValidAudience = jwtOptions.Audience,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(application.JwtSecretKey)),
+                IssuerSigningKeys = signingKeys,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.FromMinutes(1)
             };

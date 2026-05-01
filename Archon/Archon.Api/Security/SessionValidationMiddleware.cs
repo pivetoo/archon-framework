@@ -20,7 +20,8 @@ namespace Archon.Api.Security
         {
             if (context.User.Identity?.IsAuthenticated == true)
             {
-                string? sessionId = context.User.FindFirst("session_id")?.Value;
+                string? sessionId = context.User.FindFirst("sid")?.Value;
+                sessionId ??= context.User.FindFirst("session_id")?.Value;
                 if (!string.IsNullOrWhiteSpace(sessionId))
                 {
                     ISessionValidator? sessionValidator = context.RequestServices.GetService<ISessionValidator>();

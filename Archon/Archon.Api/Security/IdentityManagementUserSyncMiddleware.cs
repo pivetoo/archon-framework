@@ -16,7 +16,8 @@ namespace Archon.Api.Security
         {
             if (context.User.Identity?.IsAuthenticated == true)
             {
-                string? userIdClaim = context.User.FindFirst("user_id")?.Value;
+                string? userIdClaim = context.User.FindFirst("sub")?.Value;
+                userIdClaim ??= context.User.FindFirst("user_id")?.Value;
                 string? name = context.User.FindFirst("name")?.Value;
                 string? email = context.User.FindFirst("email")?.Value;
 

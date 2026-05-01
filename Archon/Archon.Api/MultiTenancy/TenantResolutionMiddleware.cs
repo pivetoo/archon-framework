@@ -15,12 +15,13 @@ namespace Archon.Api.MultiTenancy
 
         public async Task InvokeAsync(HttpContext context, ITenantResolver tenantResolver, ITenantContext tenantContext)
         {
-            string? clientId = context.User.FindFirst("client_id")?.Value;
-            clientId ??= TryExtractClientIdFromJwt(context);
+            string? tenantId = context.User.FindFirst("tenant_id")?.Value;
+            tenantId ??= context.User.FindFirst("contract_id")?.Value;
+            tenantId ??= TryExtractTenantIdFromJwt(context);
 
-            TenantInfo? tenant = await tenantResolver.ResolveAsync(clientId, context.RequestAborted);
+            TenantInfo? tenant = await tenantResolver.ResolveAsync(tenantId, context.RequestAborted);
 
-            if (tenant is null && !string.IsNullOrWhiteSpace(clientId))
+            if (tenant is null && !string.IsNullOrWhiteSpace(tenantId))
             {
                 tenant = await tenantResolver.ResolveAsync(null, context.RequestAborted);
             }
@@ -41,7 +42,7 @@ namespace Archon.Api.MultiTenancy
             await next(context);
         }
 
-        private static string? TryExtractClientIdFromJwt(HttpContext context)
+        private static string? TryExtractTenantIdFromJwt(HttpContext context)
         {
             string? authorizationHeader = context.Request.Headers.Authorization.FirstOrDefault();
             if (string.IsNullOrWhiteSpace(authorizationHeader) || !authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
@@ -61,9 +62,14 @@ namespace Archon.Api.MultiTenancy
                 byte[] payloadBytes = DecodeBase64Url(segments[1]);
                 using JsonDocument document = JsonDocument.Parse(payloadBytes);
 
-                if (document.RootElement.TryGetProperty("client_id", out JsonElement clientIdElement))
+                if (document.RootElement.TryGetProperty("tenant_id", out JsonElement tenantIdElement))
                 {
-                    return clientIdElement.GetString();
+                    return tenantIdElement.GetString();
+                }
+
+                if (document.RootElement.TryGetProperty("contract_id", out JsonElement contractIdElement))
+                {
+                    return contractIdElement.GetString();
                 }
 
                 return null;

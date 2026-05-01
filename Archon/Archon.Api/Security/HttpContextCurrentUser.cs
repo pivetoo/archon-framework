@@ -19,6 +19,7 @@ namespace Archon.Api.Security
             get
             {
                 string? value = httpContextAccessor.HttpContext?.User.FindFirst("user_id")?.Value;
+                value ??= httpContextAccessor.HttpContext?.User.FindFirst("sub")?.Value;
                 return long.TryParse(value, out long userId) ? userId : null;
             }
         }
@@ -27,6 +28,6 @@ namespace Archon.Api.Security
 
         public string? Email => httpContextAccessor.HttpContext?.User.FindFirst("email")?.Value;
 
-        public string? ClientId => httpContextAccessor.HttpContext?.User.FindFirst("client_id")?.Value;
+        public string? ClientId => httpContextAccessor.HttpContext?.User.FindFirst("azp")?.Value;
     }
 }

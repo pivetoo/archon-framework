@@ -1,16 +1,15 @@
 using Archon.Core.Access;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using System.Net.Http.Json;
-using System.Collections.Concurrent;
 
 namespace Archon.Infrastructure.IdentityManagement
 {
     public sealed class IdentityManagementClient
     {
-        private const string ApplicationCacheKeyPrefix = "IdentityManagement:Application:";
-        private static readonly ConcurrentDictionary<string, SemaphoreSlim> applicationLocks = new(StringComparer.OrdinalIgnoreCase);
-        private static readonly ConcurrentDictionary<string, byte> cachedKeys = new(StringComparer.OrdinalIgnoreCase);
+        private const string OpenIdConfigurationCacheKey = "IdentityManagement:OidcConfiguration";
+        private const string SigningKeysCacheKey = "IdentityManagement:SigningKeys";
 
         private readonly HttpClient httpClient;
         private readonly IMemoryCache cache;
@@ -40,60 +39,63 @@ namespace Archon.Infrastructure.IdentityManagement
             }
         }
 
-        public async Task<IdentityManagementApplicationInfo?> GetApplicationByClientIdAsync(string clientId, CancellationToken cancellationToken = default)
+        public async Task<OpenIdConnectConfigurationInfo?> GetOpenIdConfigurationAsync(CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(clientId))
+            if (cache.TryGetValue(OpenIdConfigurationCacheKey, out OpenIdConnectConfigurationInfo? cachedConfiguration))
             {
-                return null;
+                return cachedConfiguration;
             }
-
-            string cacheKey = GetApplicationCacheKey(clientId);
-            if (TryGetCachedApplication(cacheKey, out IdentityManagementApplicationInfo? cachedApplication))
-            {
-                return cachedApplication;
-            }
-
-            SemaphoreSlim applicationLock = applicationLocks.GetOrAdd(cacheKey, _ => new SemaphoreSlim(1, 1));
 
             try
             {
-                await applicationLock.WaitAsync(cancellationToken);
+                OpenIdConnectConfigurationInfo? configuration = await httpClient.GetFromJsonAsync<OpenIdConnectConfigurationInfo>(
+                    "/.well-known/openid-configuration",
+                    cancellationToken);
 
-                if (TryGetCachedApplication(cacheKey, out cachedApplication))
+                if (configuration is not null && !string.IsNullOrWhiteSpace(configuration.JwksUri))
                 {
-                    return cachedApplication;
+                    cache.Set(OpenIdConfigurationCacheKey, configuration, clientLookupCacheTtl);
                 }
 
-                IdentityManagementApplicationResponse? response = await httpClient.GetFromJsonAsync<IdentityManagementApplicationResponse>($"/api/auth/GetContractByClientId/{clientId}", cancellationToken);
-                IdentityManagementApplicationInfo? application = response?.Data;
-                if (application is not null && application.IsActive)
-                {
-                    cache.Set(cacheKey, application, clientLookupCacheTtl);
-                    cachedKeys.TryAdd(cacheKey, 0);
-                }
-
-                return application;
+                return configuration;
             }
             catch
             {
                 return null;
             }
-            finally
+        }
+
+        public async Task<IReadOnlyCollection<SecurityKey>> GetSigningKeysAsync(CancellationToken cancellationToken = default)
+        {
+            if (cache.TryGetValue(SigningKeysCacheKey, out IReadOnlyCollection<SecurityKey>? cachedKeys) && cachedKeys is not null)
             {
-                if (applicationLock.CurrentCount == 0)
-                {
-                    applicationLock.Release();
-                }
+                return cachedKeys;
+            }
+
+            OpenIdConnectConfigurationInfo? configuration = await GetOpenIdConfigurationAsync(cancellationToken);
+            if (configuration is null || string.IsNullOrWhiteSpace(configuration.JwksUri))
+            {
+                return [];
+            }
+
+            try
+            {
+                string jwks = await httpClient.GetStringAsync(configuration.JwksUri, cancellationToken);
+                JsonWebKeySet keySet = new(jwks);
+                List<SecurityKey> signingKeys = keySet.Keys.Cast<SecurityKey>().ToList();
+                cache.Set(SigningKeysCacheKey, signingKeys, clientLookupCacheTtl);
+                return signingKeys;
+            }
+            catch
+            {
+                return [];
             }
         }
 
         public void ClearCache()
         {
-            foreach (string cacheKey in cachedKeys.Keys)
-            {
-                cache.Remove(cacheKey);
-                cachedKeys.TryRemove(cacheKey, out _);
-            }
+            cache.Remove(OpenIdConfigurationCacheKey);
+            cache.Remove(SigningKeysCacheKey);
         }
 
         public async Task SyncAccessResourcesAsync(IReadOnlyCollection<AccessResourceModel> resources, CancellationToken cancellationToken = default)
@@ -104,20 +106,5 @@ namespace Archon.Infrastructure.IdentityManagement
             response.EnsureSuccessStatusCode();
         }
 
-        private static string GetApplicationCacheKey(string clientId)
-        {
-            return string.Concat(ApplicationCacheKeyPrefix, clientId.Trim());
-        }
-
-        private bool TryGetCachedApplication(string cacheKey, out IdentityManagementApplicationInfo? application)
-        {
-            bool found = cache.TryGetValue(cacheKey, out application);
-            if (!found)
-            {
-                cachedKeys.TryRemove(cacheKey, out _);
-            }
-
-            return found;
-        }
     }
 }
