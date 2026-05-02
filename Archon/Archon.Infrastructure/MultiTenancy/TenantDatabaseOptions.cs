@@ -13,6 +13,8 @@ namespace Archon.Infrastructure.MultiTenancy
 
         public string ApplicationId { get; init; } = string.Empty;
 
+        public Guid? TenantId { get; init; }
+
         public string ConnectionString { get; init; } = string.Empty;
 
         public string DatabaseType { get; init; } = nameof(DatabaseProvider.PostgreSql);

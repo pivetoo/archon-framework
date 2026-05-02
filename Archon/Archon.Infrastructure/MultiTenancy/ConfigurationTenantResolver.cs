@@ -14,16 +14,16 @@ namespace Archon.Infrastructure.MultiTenancy
             this.configuration = configuration;
         }
 
-        public Task<TenantInfo?> ResolveAsync(string? applicationId, CancellationToken cancellationToken = default)
+        public Task<TenantInfo?> ResolveAsync(string? tenantId, CancellationToken cancellationToken = default)
         {
-            string cacheKey = string.IsNullOrWhiteSpace(applicationId) ? "default" : applicationId.Trim();
+            string cacheKey = string.IsNullOrWhiteSpace(tenantId) ? "default" : tenantId.Trim();
 
             if (cache.TryGetValue(cacheKey, out TenantInfo? cachedTenant))
             {
                 return Task.FromResult<TenantInfo?>(cachedTenant);
             }
 
-            TenantInfo? tenant = ResolveFromConfiguration(applicationId);
+            TenantInfo? tenant = ResolveFromConfiguration(tenantId);
             if (tenant is not null)
             {
                 cache[cacheKey] = tenant;
@@ -32,12 +32,12 @@ namespace Archon.Infrastructure.MultiTenancy
             return Task.FromResult<TenantInfo?>(tenant);
         }
 
-        private TenantInfo? ResolveFromConfiguration(string? applicationId)
+        private TenantInfo? ResolveFromConfiguration(string? tenantId)
         {
             IConfigurationSection tenantDatabasesSection = configuration.GetSection("TenantDatabases");
             IEnumerable<IConfigurationSection> tenantSections = tenantDatabasesSection.GetChildren();
 
-            if (string.IsNullOrWhiteSpace(applicationId))
+            if (string.IsNullOrWhiteSpace(tenantId))
             {
                 IConfigurationSection? firstTenant = tenantSections.FirstOrDefault();
                 return firstTenant is null ? null : CreateTenantInfo(firstTenant);
@@ -45,8 +45,15 @@ namespace Archon.Infrastructure.MultiTenancy
 
             foreach (IConfigurationSection tenantSection in tenantSections)
             {
+                string? configuredTenantId = tenantSection["TenantId"];
+                if (!string.IsNullOrWhiteSpace(configuredTenantId) &&
+                    string.Equals(configuredTenantId, tenantId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return CreateTenantInfo(tenantSection);
+                }
+
                 string? configuredApplicationId = tenantSection["ApplicationId"];
-                if (string.Equals(configuredApplicationId, applicationId, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(configuredApplicationId, tenantId, StringComparison.OrdinalIgnoreCase))
                 {
                     return CreateTenantInfo(tenantSection);
                 }
