@@ -84,14 +84,12 @@ namespace Archon.Infrastructure.DependencyInjection
 
         public static IServiceCollection AddArchonIdentityManagement(this IServiceCollection services, IConfiguration configuration)
         {
-            IdentityManagementOptions identityManagementOptions = new IdentityManagementOptions();
-            configuration.GetSection("IdentityManagement").Bind(identityManagementOptions);
-
             JwtOptions jwtOptions = new JwtOptions();
             configuration.GetSection("Jwt").Bind(jwtOptions);
 
             services.AddMemoryCache();
-            services.AddSingleton(Options.Create(identityManagementOptions));
+            services.Configure<IntegrationOptions>(configuration.GetSection("Integration"));
+            services.AddScoped<IIntegrationService, IntegrationService>();
             services.AddSingleton(Options.Create(jwtOptions));
             services.AddHttpClient<IdentityManagementClient>();
 
