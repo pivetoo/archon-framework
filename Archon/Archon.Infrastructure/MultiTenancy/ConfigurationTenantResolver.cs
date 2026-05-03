@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using Archon.Application.MultiTenancy;
 using Archon.Core.ValueObjects;
-using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -159,27 +158,7 @@ namespace Archon.Infrastructure.MultiTenancy
             await using DbConnection connection = CreateCatalogConnection();
             await connection.OpenAsync(cancellationToken);
 
-            IEnumerable<CatalogTenantRecord> records = await connection.QueryAsync<CatalogTenantRecord>(new CommandDefinition(
-                $"""
-                select
-                    tenantid as TenantId,
-                    companyname as CompanyName,
-                    applicationid as ApplicationId,
-                    connectionstring as ConnectionString,
-                    databasetype as DatabaseType,
-                    schema as Schema,
-                    integrationsecret as IntegrationSecret,
-                    coalesce(isdefault, false) as IsDefault
-                from {GetCatalogTableName()}
-                where isactive = @IsActive
-                  and (@ApplicationId = '' or applicationid = @ApplicationId)
-                """,
-                new
-                {
-                    IsActive = true,
-                    ApplicationId = currentApplicationId
-                },
-                cancellationToken: cancellationToken));
+            List<CatalogTenantRecord> records = await LoadTenantRecordsAsync(connection, null, cancellationToken);
 
             CatalogTenantRecord? record = string.IsNullOrWhiteSpace(tenantId)
                 ? records
@@ -201,29 +180,8 @@ namespace Archon.Infrastructure.MultiTenancy
             await using DbConnection connection = CreateCatalogConnection();
             await connection.OpenAsync(cancellationToken);
 
-            CatalogTenantRecord? record = await connection.QueryFirstOrDefaultAsync<CatalogTenantRecord>(new CommandDefinition(
-                $"""
-                select
-                    tenantid as TenantId,
-                    companyname as CompanyName,
-                    applicationid as ApplicationId,
-                    connectionstring as ConnectionString,
-                    databasetype as DatabaseType,
-                    schema as Schema,
-                    integrationsecret as IntegrationSecret,
-                    coalesce(isdefault, false) as IsDefault
-                from {GetCatalogTableName()}
-                where isactive = @IsActive
-                  and integrationsecret = @IntegrationSecret
-                  and (@ApplicationId = '' or applicationid = @ApplicationId)
-                """,
-                new
-                {
-                    IsActive = true,
-                    IntegrationSecret = integrationSecret.Trim(),
-                    ApplicationId = currentApplicationId
-                },
-                cancellationToken: cancellationToken));
+            List<CatalogTenantRecord> records = await LoadTenantRecordsAsync(connection, integrationSecret.Trim(), cancellationToken);
+            CatalogTenantRecord? record = records.FirstOrDefault();
 
             return record is null ? null : CreateTenantInfo(record);
         }
@@ -252,7 +210,74 @@ namespace Archon.Infrastructure.MultiTenancy
             return new NpgsqlConnection(tenantCatalogOptions.ConnectionString);
         }
 
-        private string GetCatalogTableName()
+        private async Task<List<CatalogTenantRecord>> LoadTenantRecordsAsync(DbConnection connection, string? integrationSecret, CancellationToken cancellationToken)
+        {
+            await using DbCommand command = connection.CreateCommand();
+            command.CommandText =
+                $"""
+                select
+                    t.id::text as tenantid,
+                    t.companyname,
+                    td.applicationid,
+                    td.connectionstring,
+                    td.databasetype,
+                    td.schema,
+                    td.integrationsecret,
+                    coalesce(td.isdefault, false) as isdefault
+                from {GetTenantDatabasesTableName()} td
+                inner join {GetTenantsTableName()} t on t.id = td.tenantid
+                inner join {GetApplicationsTableName()} a on a.id = td.applicationid
+                where t.isactive = @isactive
+                  and td.isactive = @isactive
+                  and a.isactive = @isactive
+                  and (@applicationid = '' or td.applicationid = @applicationid)
+                  and (@integrationsecret is null or td.integrationsecret = @integrationsecret)
+                """;
+
+            AddParameter(command, "@isactive", true);
+            AddParameter(command, "@applicationid", currentApplicationId);
+            AddParameter(command, "@integrationsecret", integrationSecret);
+
+            List<CatalogTenantRecord> records = new();
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
+
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                records.Add(new CatalogTenantRecord
+                {
+                    TenantId = reader.GetString(0),
+                    CompanyName = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
+                    ApplicationId = reader.GetString(2),
+                    ConnectionString = reader.GetString(3),
+                    DatabaseType = reader.GetString(4),
+                    Schema = reader.IsDBNull(5) ? null : reader.GetString(5),
+                    IntegrationSecret = reader.IsDBNull(6) ? null : reader.GetString(6),
+                    IsDefault = reader.GetBoolean(7)
+                });
+            }
+
+            return records;
+        }
+
+        private static void AddParameter(DbCommand command, string name, object? value)
+        {
+            DbParameter parameter = command.CreateParameter();
+            parameter.ParameterName = name;
+            parameter.Value = value ?? DBNull.Value;
+            command.Parameters.Add(parameter);
+        }
+
+        private string GetApplicationsTableName()
+        {
+            return "public.applications";
+        }
+
+        private string GetTenantsTableName()
+        {
+            return "public.tenants";
+        }
+
+        private string GetTenantDatabasesTableName()
         {
             return "public.tenantdatabases";
         }

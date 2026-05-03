@@ -1,7 +1,6 @@
 using Archon.Application.Abstractions;
 using Archon.Application.Events;
 using Archon.Application.MultiTenancy;
-using Archon.Application.Persistence;
 using Archon.Application.Services;
 using Archon.Core.ValueObjects;
 using Archon.Infrastructure.BackgroundJobs;
@@ -9,7 +8,6 @@ using Archon.Infrastructure.Events;
 using Archon.Infrastructure.IdentityManagement;
 using Archon.Infrastructure.Migrations;
 using Archon.Infrastructure.MultiTenancy;
-using Archon.Infrastructure.Persistence.Dapper;
 using Archon.Infrastructure.Persistence.EF;
 using Archon.Infrastructure.Services;
 using Hangfire;
@@ -62,7 +60,6 @@ namespace Archon.Infrastructure.DependencyInjection
             });
 
             services.AddScoped<DbContext>(provider => provider.GetRequiredService<ArchonDbContext>());
-            services.AddScoped<ISqlConnectionFactory, TenantSqlConnectionFactory>();
             services.AddScoped<IAuditService, AuditService>();
             services.AddScoped<AuditService>();
             services.AddScoped(typeof(ICrudService<>), typeof(CrudService<>));
