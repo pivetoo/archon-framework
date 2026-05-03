@@ -5,6 +5,7 @@ using Archon.Application.Services;
 using Archon.Core.ValueObjects;
 using Archon.Infrastructure.BackgroundJobs;
 using Archon.Infrastructure.Events;
+using Archon.Infrastructure.Integrations;
 using Archon.Infrastructure.IdentityManagement;
 using Archon.Infrastructure.Migrations;
 using Archon.Infrastructure.MultiTenancy;
@@ -39,6 +40,7 @@ namespace Archon.Infrastructure.DependencyInjection
         public static IServiceCollection AddArchonPersistence(this IServiceCollection services, IConfiguration configuration, params Assembly[] modelAssemblies)
         {
             services.AddArchonMultiTenancy(configuration);
+            services.Configure<IntegrationOptions>(configuration.GetSection("Integration"));
 
             TenantDatabaseOptions tenantDatabaseOptions = BindTenantDatabaseOptions(configuration);
             ValidateTenantDatabases(tenantDatabaseOptions);
@@ -61,6 +63,7 @@ namespace Archon.Infrastructure.DependencyInjection
 
             services.AddScoped<DbContext>(provider => provider.GetRequiredService<ArchonDbContext>());
             services.AddScoped<IAuditService, AuditService>();
+            services.AddScoped<IIntegrationService, IntegrationService>();
             services.AddScoped<AuditService>();
             services.AddScoped(typeof(ICrudService<>), typeof(CrudService<>));
             services.AddScoped(typeof(CrudService<>));
