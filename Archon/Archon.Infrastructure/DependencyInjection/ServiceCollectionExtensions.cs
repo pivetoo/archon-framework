@@ -29,6 +29,8 @@ namespace Archon.Infrastructure.DependencyInjection
         public static IServiceCollection AddArchonMultiTenancy(this IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<TenantDatabaseOptions>(configuration);
+            services.Configure<TenantCatalogOptions>(configuration.GetSection("TenantCatalog"));
+            services.AddMemoryCache();
             services.AddScoped<MultiTenantContext>();
             services.AddScoped<ITenantContext>(provider => provider.GetRequiredService<MultiTenantContext>());
             services.AddSingleton<ITenantResolver, ConfigurationTenantResolver>();

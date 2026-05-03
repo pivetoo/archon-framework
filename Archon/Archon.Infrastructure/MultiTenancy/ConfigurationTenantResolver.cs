@@ -1,35 +1,67 @@
 using System.Collections.Concurrent;
 using Archon.Application.MultiTenancy;
+using Archon.Core.ValueObjects;
+using Dapper;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using Npgsql;
+using System.Data.Common;
 
 namespace Archon.Infrastructure.MultiTenancy
 {
     public sealed class ConfigurationTenantResolver : ITenantResolver
     {
         private readonly IConfiguration configuration;
-        private readonly ConcurrentDictionary<string, TenantInfo> cache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly IMemoryCache cache;
+        private readonly TenantCatalogOptions tenantCatalogOptions;
+        private readonly string currentApplicationId;
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> locks = new(StringComparer.OrdinalIgnoreCase);
 
-        public ConfigurationTenantResolver(IConfiguration configuration)
+        public ConfigurationTenantResolver(IConfiguration configuration, IMemoryCache cache, IOptions<TenantCatalogOptions> tenantCatalogOptions)
         {
             this.configuration = configuration;
+            this.cache = cache;
+            this.tenantCatalogOptions = tenantCatalogOptions.Value;
+            currentApplicationId = !string.IsNullOrWhiteSpace(this.tenantCatalogOptions.ApplicationId)
+                ? this.tenantCatalogOptions.ApplicationId
+                : configuration["Jwt:Audience"] ?? string.Empty;
         }
 
-        public Task<TenantInfo?> ResolveAsync(string? tenantId, CancellationToken cancellationToken = default)
+        public async Task<TenantInfo?> ResolveAsync(string? tenantId, CancellationToken cancellationToken = default)
         {
-            string cacheKey = string.IsNullOrWhiteSpace(tenantId) ? "default" : tenantId.Trim();
+            string normalizedTenantId = string.IsNullOrWhiteSpace(tenantId) ? "default" : tenantId.Trim();
+            string cacheKey = $"tenant:{currentApplicationId}:{normalizedTenantId}";
 
             if (cache.TryGetValue(cacheKey, out TenantInfo? cachedTenant))
             {
-                return Task.FromResult<TenantInfo?>(cachedTenant);
+                return cachedTenant;
             }
 
-            TenantInfo? tenant = ResolveFromConfiguration(tenantId);
-            if (tenant is not null)
+            SemaphoreSlim syncLock = locks.GetOrAdd(cacheKey, static _ => new SemaphoreSlim(1, 1));
+            await syncLock.WaitAsync(cancellationToken);
+
+            try
             {
-                cache[cacheKey] = tenant;
-            }
+                if (cache.TryGetValue(cacheKey, out cachedTenant))
+                {
+                    return cachedTenant;
+                }
 
-            return Task.FromResult<TenantInfo?>(tenant);
+                TenantInfo? tenant = await ResolveFromCatalogAsync(tenantId, cancellationToken)
+                    ?? ResolveFromConfiguration(tenantId);
+
+                if (tenant is not null)
+                {
+                    cache.Set(cacheKey, tenant, tenantCatalogOptions.CacheTtl);
+                }
+
+                return tenant;
+            }
+            finally
+            {
+                syncLock.Release();
+            }
         }
 
         private TenantInfo? ResolveFromConfiguration(string? tenantId)
@@ -62,11 +94,24 @@ namespace Archon.Infrastructure.MultiTenancy
             return null;
         }
 
-        public Task<TenantInfo?> ResolveBySecretAsync(string? integrationSecret, CancellationToken cancellationToken = default)
+        public async Task<TenantInfo?> ResolveBySecretAsync(string? integrationSecret, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(integrationSecret))
             {
-                return Task.FromResult<TenantInfo?>(null);
+                return null;
+            }
+
+            string cacheKey = $"tenant:secret:{currentApplicationId}:{integrationSecret.Trim()}";
+            if (cache.TryGetValue(cacheKey, out TenantInfo? cachedTenant))
+            {
+                return cachedTenant;
+            }
+
+            TenantInfo? tenant = await ResolveBySecretFromCatalogAsync(integrationSecret, cancellationToken);
+            if (tenant is not null)
+            {
+                cache.Set(cacheKey, tenant, tenantCatalogOptions.CacheTtl);
+                return tenant;
             }
 
             IConfigurationSection tenantDatabasesSection = configuration.GetSection("TenantDatabases");
@@ -75,11 +120,11 @@ namespace Archon.Infrastructure.MultiTenancy
                 string? configuredSecret = tenantSection["IntegrationSecret"];
                 if (string.Equals(configuredSecret, integrationSecret, StringComparison.Ordinal))
                 {
-                    return Task.FromResult(CreateTenantInfo(tenantSection));
+                    return CreateTenantInfo(tenantSection);
                 }
             }
 
-            return Task.FromResult<TenantInfo?>(null);
+            return null;
         }
 
         private static TenantInfo? CreateTenantInfo(IConfigurationSection tenantSection)
@@ -101,6 +146,125 @@ namespace Archon.Infrastructure.MultiTenancy
                 Schema = option.Schema,
                 DatabaseProvider = option.GetDatabaseProvider(),
                 IntegrationSecret = option.IntegrationSecret
+            };
+        }
+
+        private async Task<TenantInfo?> ResolveFromCatalogAsync(string? tenantId, CancellationToken cancellationToken)
+        {
+            if (!tenantCatalogOptions.IsConfigured)
+            {
+                return null;
+            }
+
+            await using DbConnection connection = CreateCatalogConnection();
+            await connection.OpenAsync(cancellationToken);
+
+            IEnumerable<CatalogTenantRecord> records = await connection.QueryAsync<CatalogTenantRecord>(new CommandDefinition(
+                $"""
+                select
+                    tenantid as TenantId,
+                    companyname as CompanyName,
+                    applicationid as ApplicationId,
+                    connectionstring as ConnectionString,
+                    databasetype as DatabaseType,
+                    schema as Schema,
+                    integrationsecret as IntegrationSecret,
+                    coalesce(isdefault, false) as IsDefault
+                from {GetCatalogTableName()}
+                where isactive = @IsActive
+                  and (@ApplicationId = '' or applicationid = @ApplicationId)
+                """,
+                new
+                {
+                    IsActive = true,
+                    ApplicationId = currentApplicationId
+                },
+                cancellationToken: cancellationToken));
+
+            CatalogTenantRecord? record = string.IsNullOrWhiteSpace(tenantId)
+                ? records
+                    .OrderByDescending(item => item.IsDefault)
+                    .ThenBy(item => item.TenantId, StringComparer.OrdinalIgnoreCase)
+                    .FirstOrDefault()
+                : records.FirstOrDefault(item => string.Equals(item.TenantId, tenantId.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            return record is null ? null : CreateTenantInfo(record);
+        }
+
+        private async Task<TenantInfo?> ResolveBySecretFromCatalogAsync(string integrationSecret, CancellationToken cancellationToken)
+        {
+            if (!tenantCatalogOptions.IsConfigured)
+            {
+                return null;
+            }
+
+            await using DbConnection connection = CreateCatalogConnection();
+            await connection.OpenAsync(cancellationToken);
+
+            CatalogTenantRecord? record = await connection.QueryFirstOrDefaultAsync<CatalogTenantRecord>(new CommandDefinition(
+                $"""
+                select
+                    tenantid as TenantId,
+                    companyname as CompanyName,
+                    applicationid as ApplicationId,
+                    connectionstring as ConnectionString,
+                    databasetype as DatabaseType,
+                    schema as Schema,
+                    integrationsecret as IntegrationSecret,
+                    coalesce(isdefault, false) as IsDefault
+                from {GetCatalogTableName()}
+                where isactive = @IsActive
+                  and integrationsecret = @IntegrationSecret
+                  and (@ApplicationId = '' or applicationid = @ApplicationId)
+                """,
+                new
+                {
+                    IsActive = true,
+                    IntegrationSecret = integrationSecret.Trim(),
+                    ApplicationId = currentApplicationId
+                },
+                cancellationToken: cancellationToken));
+
+            return record is null ? null : CreateTenantInfo(record);
+        }
+
+        private TenantInfo? CreateTenantInfo(CatalogTenantRecord record)
+        {
+            if (string.IsNullOrWhiteSpace(record.ConnectionString))
+            {
+                return null;
+            }
+
+            return new TenantInfo
+            {
+                TenantId = record.TenantId,
+                CompanyName = record.CompanyName,
+                ApplicationId = record.ApplicationId,
+                ConnectionString = record.ConnectionString,
+                Schema = string.IsNullOrWhiteSpace(record.Schema) ? "public" : record.Schema,
+                DatabaseProvider = ResolveDatabaseProvider(record.DatabaseType),
+                IntegrationSecret = record.IntegrationSecret
+            };
+        }
+
+        private DbConnection CreateCatalogConnection()
+        {
+            return new NpgsqlConnection(tenantCatalogOptions.ConnectionString);
+        }
+
+        private string GetCatalogTableName()
+        {
+            return "public.tenantdatabases";
+        }
+
+        private static DatabaseProvider ResolveDatabaseProvider(string databaseType)
+        {
+            return databaseType.Trim().ToLowerInvariant() switch
+            {
+                "postgresql" or "postgres" => DatabaseProvider.PostgreSql,
+                "sqlserver" or "mssql" => DatabaseProvider.SqlServer,
+                "mysql" => DatabaseProvider.MySql,
+                _ => DatabaseProvider.PostgreSql
             };
         }
     }
