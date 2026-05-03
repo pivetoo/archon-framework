@@ -216,22 +216,18 @@ namespace Archon.Infrastructure.MultiTenancy
             command.CommandText =
                 $"""
                 select
-                    t.id::text as tenantid,
-                    t.companyname,
-                    td.applicationid,
-                    td.connectionstring,
-                    td.databasetype,
-                    td.schema,
-                    td.integrationsecret,
-                    coalesce(td.isdefault, false) as isdefault
-                from {GetTenantDatabasesTableName()} td
-                inner join {GetTenantsTableName()} t on t.id = td.tenantid
-                inner join {GetApplicationsTableName()} a on a.id = td.applicationid
-                where t.isactive = @isactive
-                  and td.isactive = @isactive
-                  and a.isactive = @isactive
-                  and (@applicationid = '' or td.applicationid = @applicationid)
-                  and (@integrationsecret is null or td.integrationsecret = @integrationsecret)
+                    tenantid,
+                    companyname,
+                    applicationid,
+                    connectionstring,
+                    databasetype,
+                    schema,
+                    integrationsecret,
+                    coalesce(isdefault, false) as isdefault
+                from {GetTenantDatabasesTableName()}
+                where isactive = @isactive
+                  and (@applicationid = '' or applicationid = @applicationid)
+                  and (@integrationsecret is null or integrationsecret = @integrationsecret)
                 """;
 
             AddParameter(command, "@isactive", true);
@@ -265,16 +261,6 @@ namespace Archon.Infrastructure.MultiTenancy
             parameter.ParameterName = name;
             parameter.Value = value ?? DBNull.Value;
             command.Parameters.Add(parameter);
-        }
-
-        private string GetApplicationsTableName()
-        {
-            return "public.applications";
-        }
-
-        private string GetTenantsTableName()
-        {
-            return "public.tenants";
         }
 
         private string GetTenantDatabasesTableName()
