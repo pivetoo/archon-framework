@@ -43,7 +43,6 @@ namespace Archon.Infrastructure.DependencyInjection
             services.Configure<IntegrationOptions>(configuration.GetSection("Integration"));
 
             TenantDatabaseOptions tenantDatabaseOptions = BindTenantDatabaseOptions(configuration);
-            ValidateTenantDatabases(tenantDatabaseOptions);
 
             services.AddSingleton(tenantDatabaseOptions);
             services.AddSingleton(new ModelAssemblyRegistry(GetModelAssemblies(modelAssemblies)));
@@ -187,16 +186,6 @@ namespace Archon.Infrastructure.DependencyInjection
             return tenantDatabaseOptions;
         }
 
-        private static void ValidateTenantDatabases(TenantDatabaseOptions tenantDatabaseOptions)
-        {
-            bool hasAnyConnection = tenantDatabaseOptions.TenantDatabases
-                .Any(item => !string.IsNullOrWhiteSpace(item.Value.ConnectionString));
-
-            if (!hasAnyConnection)
-            {
-                throw new InvalidOperationException("TenantDatabases must contain at least one valid connection string.");
-            }
-        }
 
         private static IReadOnlyCollection<Assembly> GetModelAssemblies(IEnumerable<Assembly> modelAssemblies)
         {
@@ -226,7 +215,7 @@ namespace Archon.Infrastructure.DependencyInjection
 
             if (connections.Count == 0)
             {
-                throw new InvalidOperationException("No valid connection string was found in TenantDatabases.");
+                return connections;
             }
 
             return connections;
