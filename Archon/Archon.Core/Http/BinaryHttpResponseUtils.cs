@@ -1,5 +1,3 @@
-using System.Net.Http;
-
 namespace Archon.Core.Http
 {
     public static class BinaryHttpResponseUtils
