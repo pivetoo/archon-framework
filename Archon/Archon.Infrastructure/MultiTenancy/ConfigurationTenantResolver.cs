@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using NpgsqlTypes;
 using System.Data.Common;
 
 namespace Archon.Infrastructure.MultiTenancy
@@ -260,6 +261,12 @@ namespace Archon.Infrastructure.MultiTenancy
             DbParameter parameter = command.CreateParameter();
             parameter.ParameterName = name;
             parameter.Value = value ?? DBNull.Value;
+
+            if (value is null && parameter is NpgsqlParameter npgsqlParameter)
+            {
+                npgsqlParameter.NpgsqlDbType = NpgsqlDbType.Text;
+            }
+
             command.Parameters.Add(parameter);
         }
 

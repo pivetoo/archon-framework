@@ -2,6 +2,7 @@ using Archon.Application.Integrations;
 using Archon.Application.MultiTenancy;
 using Archon.Application.Services;
 using Archon.Core.ValueObjects;
+using Archon.Infrastructure.MultiTenancy;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -16,12 +17,14 @@ namespace Archon.Infrastructure.Integrations
         private readonly ITenantContext tenantContext;
         private readonly IMemoryCache cache;
         private readonly IntegrationOptions options;
+        private readonly TenantDatabaseOptions tenantDatabaseOptions;
 
-        public IntegrationService(ITenantContext tenantContext, IMemoryCache cache, IOptions<IntegrationOptions> options)
+        public IntegrationService(ITenantContext tenantContext, IMemoryCache cache, IOptions<IntegrationOptions> options, TenantDatabaseOptions tenantDatabaseOptions)
         {
             this.tenantContext = tenantContext;
             this.cache = cache;
             this.options = options.Value;
+            this.tenantDatabaseOptions = tenantDatabaseOptions;
         }
 
         public async Task<Integration?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
@@ -38,15 +41,16 @@ namespace Archon.Infrastructure.Integrations
                 return cachedIntegration;
             }
 
-            if (string.IsNullOrWhiteSpace(tenantContext.ConnectionString))
+            (string connectionString, DatabaseProvider databaseProvider, string? schema) = ResolveTenant();
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
                 return null;
             }
 
-            await using DbConnection connection = CreateTenantConnection();
+            await using DbConnection connection = CreateConnection(connectionString, databaseProvider);
             await connection.OpenAsync(cancellationToken);
 
-            Integration? integration = await LoadIntegrationAsync(connection, name.Trim(), cancellationToken);
+            Integration? integration = await LoadIntegrationAsync(connection, name.Trim(), schema, cancellationToken);
             if (integration is not null)
             {
                 cache.Set(cacheKey, integration, options.CacheTtl);
@@ -55,7 +59,7 @@ namespace Archon.Infrastructure.Integrations
             return integration;
         }
 
-        private async Task<Integration?> LoadIntegrationAsync(DbConnection connection, string name, CancellationToken cancellationToken)
+        private async Task<Integration?> LoadIntegrationAsync(DbConnection connection, string name, string? schema, CancellationToken cancellationToken)
         {
             await using DbCommand integrationCommand = connection.CreateCommand();
             integrationCommand.CommandText =
@@ -64,7 +68,7 @@ namespace Archon.Infrastructure.Integrations
                     id,
                     name,
                     baseurl
-                from {GetIntegrationsTableName()}
+                from {GetIntegrationsTableName(schema)}
                 where isactive = @isactive
                   and name = @name
                 """;
@@ -83,7 +87,7 @@ namespace Archon.Infrastructure.Integrations
             string baseUrl = integrationReader.GetString(2);
             await integrationReader.DisposeAsync();
 
-            List<IntegrationParameter> parameters = await LoadParametersAsync(connection, integrationId, cancellationToken);
+            List<IntegrationParameter> parameters = await LoadParametersAsync(connection, integrationId, schema, cancellationToken);
 
             return new Integration
             {
@@ -93,7 +97,7 @@ namespace Archon.Infrastructure.Integrations
             };
         }
 
-        private async Task<List<IntegrationParameter>> LoadParametersAsync(DbConnection connection, long integrationId, CancellationToken cancellationToken)
+        private async Task<List<IntegrationParameter>> LoadParametersAsync(DbConnection connection, long integrationId, string? schema, CancellationToken cancellationToken)
         {
             await using DbCommand parametersCommand = connection.CreateCommand();
             parametersCommand.CommandText =
@@ -102,7 +106,7 @@ namespace Archon.Infrastructure.Integrations
                     key,
                     value,
                     coalesce(issecret, false) as issecret
-                from {GetIntegrationParametersTableName()}
+                from {GetIntegrationParametersTableName(schema)}
                 where isactive = @isactive
                   and integrationid = @integrationid
                 order by id
@@ -126,30 +130,51 @@ namespace Archon.Infrastructure.Integrations
             return parameters;
         }
 
-        private DbConnection CreateTenantConnection()
+        private (string connectionString, DatabaseProvider databaseProvider, string? schema) ResolveTenant()
         {
-            return tenantContext.DatabaseProvider switch
+            if (!string.IsNullOrWhiteSpace(tenantContext.ConnectionString))
             {
-                DatabaseProvider.PostgreSql => new NpgsqlConnection(tenantContext.ConnectionString),
-                DatabaseProvider.SqlServer => new SqlConnection(tenantContext.ConnectionString),
-                DatabaseProvider.MySql => new MySqlConnection(tenantContext.ConnectionString),
-                _ => throw new ArgumentOutOfRangeException(nameof(tenantContext.DatabaseProvider), tenantContext.DatabaseProvider, "Unsupported database provider.")
+                return (tenantContext.ConnectionString, tenantContext.DatabaseProvider, tenantContext.Schema);
+            }
+
+            KeyValuePair<string, TenantDatabaseOption> fallbackTenant = tenantDatabaseOptions.TenantDatabases
+                .FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Value.ConnectionString));
+
+            if (!string.IsNullOrWhiteSpace(fallbackTenant.Value?.ConnectionString))
+            {
+                return (
+                    fallbackTenant.Value.ConnectionString,
+                    fallbackTenant.Value.GetDatabaseProvider(),
+                    fallbackTenant.Value.Schema);
+            }
+
+            return (string.Empty, DatabaseProvider.PostgreSql, null);
+        }
+
+        private static DbConnection CreateConnection(string connectionString, DatabaseProvider databaseProvider)
+        {
+            return databaseProvider switch
+            {
+                DatabaseProvider.PostgreSql => new NpgsqlConnection(connectionString),
+                DatabaseProvider.SqlServer => new SqlConnection(connectionString),
+                DatabaseProvider.MySql => new MySqlConnection(connectionString),
+                _ => throw new ArgumentOutOfRangeException(nameof(databaseProvider), databaseProvider, "Unsupported database provider.")
             };
         }
 
-        private string GetIntegrationsTableName()
+        private static string GetIntegrationsTableName(string? schema)
         {
-            return $"{GetSchemaPrefix()}integrations";
+            return $"{GetSchemaPrefix(schema)}integrations";
         }
 
-        private string GetIntegrationParametersTableName()
+        private static string GetIntegrationParametersTableName(string? schema)
         {
-            return $"{GetSchemaPrefix()}integrationparameters";
+            return $"{GetSchemaPrefix(schema)}integrationparameters";
         }
 
-        private string GetSchemaPrefix()
+        private static string GetSchemaPrefix(string? schema)
         {
-            return string.IsNullOrWhiteSpace(tenantContext.Schema) ? string.Empty : $"{tenantContext.Schema}.";
+            return string.IsNullOrWhiteSpace(schema) ? string.Empty : $"{schema}.";
         }
 
         private static void AddParameter(DbCommand command, string name, object? value)
