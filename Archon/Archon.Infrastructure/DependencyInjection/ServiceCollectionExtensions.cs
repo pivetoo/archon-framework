@@ -13,6 +13,7 @@ using Archon.Infrastructure.Persistence.EF;
 using Archon.Infrastructure.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Npgsql;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -186,7 +187,6 @@ namespace Archon.Infrastructure.DependencyInjection
             return tenantDatabaseOptions;
         }
 
-
         private static IReadOnlyCollection<Assembly> GetModelAssemblies(IEnumerable<Assembly> modelAssemblies)
         {
             List<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies()
@@ -213,12 +213,60 @@ namespace Archon.Infrastructure.DependencyInjection
                 .Where(item => !string.IsNullOrWhiteSpace(item.ConnectionString))
                 .ToList();
 
-            if (connections.Count == 0)
+            if (connections.Count > 0)
             {
                 return connections;
             }
 
-            return connections;
+            return TryGetCatalogConnections(configuration);
+        }
+
+        private static List<(string name, string connectionString, DatabaseProvider databaseProvider)> TryGetCatalogConnections(IConfiguration configuration)
+        {
+            string? catalogConnectionString = configuration["TenantCatalog:ConnectionString"];
+            string? applicationId = configuration["TenantCatalog:ApplicationId"];
+
+            if (string.IsNullOrWhiteSpace(catalogConnectionString) || string.IsNullOrWhiteSpace(applicationId))
+            {
+                return [];
+            }
+
+            try
+            {
+                using NpgsqlConnection conn = new(catalogConnectionString);
+                conn.Open();
+
+                using NpgsqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText =
+                    """
+                    SELECT connectionstring, databasetype, coalesce("schema", 'public')
+                    FROM public.tenantdatabases
+                    WHERE applicationid = @appid AND isactive = true
+                    """;
+                cmd.Parameters.AddWithValue("appid", NpgsqlTypes.NpgsqlDbType.Text, applicationId);
+
+                List<(string, string, DatabaseProvider)> catalogConnections = [];
+                using NpgsqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    string connStr = reader.GetString(0);
+                    string dbType = reader.GetString(1);
+                    string schema = reader.GetString(2);
+
+                    DatabaseProvider provider = dbType.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase)
+                        ? DatabaseProvider.PostgreSql
+                        : DatabaseProvider.SqlServer;
+
+                    catalogConnections.Add(($"catalog-{schema}", connStr, provider));
+                }
+
+                return catalogConnections;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to load migration connections from TenantCatalog: {ex.Message}");
+                return [];
+            }
         }
 
         private static (string connectionString, DatabaseProvider databaseProvider, string? schema) ResolveCurrentTenant(ITenantContext tenantContext, TenantDatabaseOptions tenantDatabaseOptions)
