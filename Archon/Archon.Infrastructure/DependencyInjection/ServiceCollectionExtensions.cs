@@ -98,7 +98,8 @@ namespace Archon.Infrastructure.DependencyInjection
             services.Configure<IntegrationOptions>(configuration.GetSection("Integration"));
             services.AddScoped<IIntegrationService, IntegrationService>();
             services.AddSingleton(Options.Create(jwtOptions));
-            services.AddHttpClient<IdentityManagementClient>();
+            services.AddArchonRestApi();
+            services.AddScoped<IdentityManagementClient>();
 
             return services;
         }

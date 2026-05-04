@@ -34,6 +34,27 @@ namespace Archon.Infrastructure.RestApi
             };
         }
 
+        public async Task<RestResponse<string>> FetchString(RestRequest request, CancellationToken ct = default)
+        {
+            using HttpRequestMessage message = new(request.Method, request.Url);
+
+            foreach (KeyValuePair<string, string> header in request.Headers)
+                message.Headers.TryAddWithoutValidation(header.Key, header.Value);
+
+            if (request.Body is not null)
+                message.Content = JsonContent.Create(request.Body, options: JsonOptions);
+
+            HttpResponseMessage response = await http.SendAsync(message, ct);
+            string body = await response.Content.ReadAsStringAsync(ct);
+
+            return new RestResponse<string>
+            {
+                Status = (int)response.StatusCode,
+                Data = response.IsSuccessStatusCode ? body : default,
+                Errors = response.IsSuccessStatusCode ? [] : ParseErrors(body)
+            };
+        }
+
         private static T? Deserialize<T>(string json)
         {
             if (string.IsNullOrWhiteSpace(json))

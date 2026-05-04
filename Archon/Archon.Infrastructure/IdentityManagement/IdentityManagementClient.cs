@@ -2,124 +2,95 @@ using Archon.Application.Integrations;
 using Archon.Application.Services;
 using Archon.Core.Access;
 using Archon.Infrastructure.Integrations;
+using Archon.Infrastructure.RestApi;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System.Net.Http.Json;
+using Rest = Archon.Infrastructure.RestApi.RestApi;
 
 namespace Archon.Infrastructure.IdentityManagement
 {
     public sealed class IdentityManagementClient
     {
-        private const string IdentityManagementIntegrationName = "identity-management";
+        private const string IntegrationName = "identity-management";
 
-        private readonly HttpClient httpClient;
+        private readonly Rest restApi;
         private readonly IMemoryCache cache;
-        private readonly TimeSpan clientLookupCacheTtl;
         private readonly IIntegrationService integrationService;
+        private readonly TimeSpan cacheTtl;
 
-        public IdentityManagementClient(HttpClient httpClient, IMemoryCache cache, IIntegrationService integrationService, IOptions<IntegrationOptions> options)
+        public IdentityManagementClient(Rest restApi, IMemoryCache cache, IIntegrationService integrationService, IOptions<IntegrationOptions> options)
         {
-            this.httpClient = httpClient;
+            this.restApi = restApi;
             this.cache = cache;
             this.integrationService = integrationService;
 
             IntegrationOptions integrationOptions = options.Value;
-            clientLookupCacheTtl = integrationOptions.CacheTtl > TimeSpan.Zero
+            cacheTtl = integrationOptions.CacheTtl > TimeSpan.Zero
                 ? integrationOptions.CacheTtl
                 : TimeSpan.FromMinutes(5);
         }
 
-        public async Task<OpenIdConnectConfigurationInfo?> GetOpenIdConfigurationAsync(CancellationToken cancellationToken = default)
+        public async Task<OpenIdConnectConfigurationInfo?> GetOpenIdConfigurationAsync(CancellationToken ct = default)
         {
-            Integration? integration = await EnsureConfiguredAsync(cancellationToken);
-            if (integration is null)
-            {
-                return null;
-            }
+            string? baseUrl = await ResolveBaseUrlAsync(ct);
+            if (baseUrl is null) return null;
 
-            string cacheKey = GetOpenIdConfigurationCacheKey(integration.BaseUrl);
-            if (cache.TryGetValue(cacheKey, out OpenIdConnectConfigurationInfo? cachedConfiguration))
-            {
-                return cachedConfiguration;
-            }
+            string cacheKey = $"IdentityManagement:{baseUrl}:OidcConfiguration";
+            if (cache.TryGetValue(cacheKey, out OpenIdConnectConfigurationInfo? cached) && cached is not null)
+                return cached;
 
-            try
-            {
-                OpenIdConnectConfigurationInfo? configuration = await httpClient.GetFromJsonAsync<OpenIdConnectConfigurationInfo>(
-                    "/.well-known/openid-configuration",
-                    cancellationToken);
+            RestResponse<OpenIdConnectConfigurationInfo> response = await restApi.Fetch<OpenIdConnectConfigurationInfo>(
+                RestRequest.Get($"{baseUrl}/.well-known/openid-configuration"), ct);
 
-                if (configuration is not null && !string.IsNullOrWhiteSpace(configuration.JwksUri))
-                {
-                    cache.Set(cacheKey, configuration, clientLookupCacheTtl);
-                }
+            if (!response.Ok) return null;
 
-                return configuration;
-            }
-            catch
-            {
-                Console.WriteLine("IdentityManagementClient: failed to load /.well-known/openid-configuration.");
-                return null;
-            }
+            if (response.Data is not null)
+                cache.Set(cacheKey, response.Data, cacheTtl);
+
+            return response.Data;
         }
 
-        public async Task<IReadOnlyCollection<SecurityKey>> GetSigningKeysAsync(CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyCollection<SecurityKey>> GetSigningKeysAsync(CancellationToken ct = default)
         {
-            Integration? integration = await EnsureConfiguredAsync(cancellationToken);
-            if (integration is null)
-            {
+            OpenIdConnectConfigurationInfo? config = await GetOpenIdConfigurationAsync(ct);
+            if (config is null || string.IsNullOrWhiteSpace(config.JwksUri))
                 return [];
-            }
 
-            string cacheKey = GetSigningKeysCacheKey(integration.BaseUrl);
+            string cacheKey = $"IdentityManagement:{config.JwksUri}:SigningKeys";
             if (cache.TryGetValue(cacheKey, out IReadOnlyCollection<SecurityKey>? cachedKeys) && cachedKeys is not null)
-            {
                 return cachedKeys;
-            }
 
-            OpenIdConnectConfigurationInfo? configuration = await GetOpenIdConfigurationAsync(cancellationToken);
-            if (configuration is null || string.IsNullOrWhiteSpace(configuration.JwksUri))
-            {
-                return [];
-            }
+            RestResponse<string> response = await restApi.FetchString(
+                RestRequest.Get(config.JwksUri), ct);
 
-            try
-            {
-                string jwks = await httpClient.GetStringAsync(configuration.JwksUri, cancellationToken);
-                JsonWebKeySet keySet = new(jwks);
-                List<SecurityKey> signingKeys = keySet.Keys.Cast<SecurityKey>().ToList();
-                cache.Set(cacheKey, signingKeys, clientLookupCacheTtl);
-                return signingKeys;
-            }
-            catch
-            {
-                Console.WriteLine("IdentityManagementClient: failed to load JWKS signing keys.");
-                return [];
-            }
+            if (!response.Ok) return [];
+
+            JsonWebKeySet keySet = new(response.Data!);
+            List<SecurityKey> signingKeys = keySet.Keys.Cast<SecurityKey>().ToList();
+            cache.Set(cacheKey, signingKeys, cacheTtl);
+            return signingKeys;
         }
 
-        public void ClearCache()
-        {
-            // Cache is namespaced by base URL and naturally expires via TTL.
-        }
-
-        public async Task SyncAccessResourcesAsync(IReadOnlyCollection<AccessResourceModel> resources, CancellationToken cancellationToken = default)
+        public async Task SyncAccessResourcesAsync(IReadOnlyCollection<AccessResourceModel> resources, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(resources);
-            Integration? integration = await EnsureConfiguredAsync(cancellationToken);
-            if (integration is null)
-            {
-                throw new InvalidOperationException("Integration 'identity-management' is not configured.");
-            }
 
-            HttpResponseMessage response = await httpClient.PostAsJsonAsync("/api/AccessResources/Sync", resources, cancellationToken);
-            response.EnsureSuccessStatusCode();
+            (string? baseUrl, string? secret) = await ResolveIntegrationAsync(ct);
+            if (baseUrl is null)
+                throw new InvalidOperationException("Integration 'identity-management' is not configured.");
+
+            RestResponse<object> response = await restApi.Fetch<object>(
+                RestRequest.Post($"{baseUrl}/api/AccessResources/Sync", resources)
+                           .WithSecret(secret!), ct);
+
+            if (!response.Ok)
+                throw new HttpRequestException($"IdentityManagement Sync returned {response.Status}");
         }
 
-        private async Task<Integration?> EnsureConfiguredAsync(CancellationToken cancellationToken)
+        private async Task<string?> ResolveBaseUrlAsync(CancellationToken ct)
         {
-            Integration? integration = await integrationService.GetByNameAsync(IdentityManagementIntegrationName, cancellationToken);
+            Integration? integration = await integrationService.GetByNameAsync(IntegrationName, ct);
             if (integration is null)
             {
                 Console.WriteLine("IdentityManagementClient: integration 'identity-management' was not found in table 'integrations'.");
@@ -132,31 +103,31 @@ namespace Archon.Infrastructure.IdentityManagement
                 return null;
             }
 
-            httpClient.BaseAddress = new Uri(integration.BaseUrl, UriKind.Absolute);
+            return integration.BaseUrl;
+        }
 
-            httpClient.DefaultRequestHeaders.Remove("X-Integration-Secret");
-            string? integrationSecret = integration.GetParameter("IntegrationSecret");
-            if (!string.IsNullOrWhiteSpace(integrationSecret))
+        private async Task<(string? baseUrl, string? secret)> ResolveIntegrationAsync(CancellationToken ct)
+        {
+            Integration? integration = await integrationService.GetByNameAsync(IntegrationName, ct);
+            if (integration is null)
             {
-                httpClient.DefaultRequestHeaders.Add("X-Integration-Secret", integrationSecret);
+                Console.WriteLine("IdentityManagementClient: integration 'identity-management' was not found in table 'integrations'.");
+                return (null, null);
             }
-            else
+
+            if (string.IsNullOrWhiteSpace(integration.BaseUrl))
+            {
+                Console.WriteLine("IdentityManagementClient: integration 'identity-management' is configured without baseurl.");
+                return (null, null);
+            }
+
+            string? secret = integration.GetParameter("IntegrationSecret");
+            if (string.IsNullOrWhiteSpace(secret))
             {
                 Console.WriteLine("IdentityManagementClient: integration 'identity-management' is configured without IntegrationSecret.");
             }
 
-            return integration;
+            return (integration.BaseUrl, secret);
         }
-
-        private static string GetOpenIdConfigurationCacheKey(string baseUrl)
-        {
-            return $"IdentityManagement:{baseUrl}:OidcConfiguration";
-        }
-
-        private static string GetSigningKeysCacheKey(string baseUrl)
-        {
-            return $"IdentityManagement:{baseUrl}:SigningKeys";
-        }
-
     }
 }
