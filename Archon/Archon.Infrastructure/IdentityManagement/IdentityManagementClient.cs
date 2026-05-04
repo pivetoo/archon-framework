@@ -34,19 +34,29 @@ namespace Archon.Infrastructure.IdentityManagement
         public async Task<OpenIdConnectConfigurationInfo?> GetOpenIdConfigurationAsync(CancellationToken ct = default)
         {
             string? baseUrl = await ResolveBaseUrlAsync(ct);
-            if (baseUrl is null) return null;
+            if (baseUrl is null)
+            {
+                return null;
+            }
 
             string cacheKey = $"IdentityManagement:{baseUrl}:OidcConfiguration";
             if (cache.TryGetValue(cacheKey, out OpenIdConnectConfigurationInfo? cached) && cached is not null)
+            {
                 return cached;
+            }
 
             RestResponse<OpenIdConnectConfigurationInfo> response = await restApi.Fetch<OpenIdConnectConfigurationInfo>(
                 RestRequest.Get($"{baseUrl}/.well-known/openid-configuration"), ct);
 
-            if (!response.Ok) return null;
+            if (!response.Ok)
+            {
+                return null;
+            }
 
             if (response.Data is not null)
+            {
                 cache.Set(cacheKey, response.Data, cacheTtl);
+            }
 
             return response.Data;
         }
@@ -55,16 +65,23 @@ namespace Archon.Infrastructure.IdentityManagement
         {
             OpenIdConnectConfigurationInfo? config = await GetOpenIdConfigurationAsync(ct);
             if (config is null || string.IsNullOrWhiteSpace(config.JwksUri))
+            {
                 return [];
+            }
 
             string cacheKey = $"IdentityManagement:{config.JwksUri}:SigningKeys";
             if (cache.TryGetValue(cacheKey, out IReadOnlyCollection<SecurityKey>? cachedKeys) && cachedKeys is not null)
+            {
                 return cachedKeys;
+            }
 
             RestResponse<string> response = await restApi.FetchString(
                 RestRequest.Get(config.JwksUri), ct);
 
-            if (!response.Ok) return [];
+            if (!response.Ok)
+            {
+                return [];
+            }
 
             JsonWebKeySet keySet = new(response.Data!);
             List<SecurityKey> signingKeys = keySet.Keys.Cast<SecurityKey>().ToList();
@@ -78,14 +95,18 @@ namespace Archon.Infrastructure.IdentityManagement
 
             (string? baseUrl, string? secret) = await ResolveIntegrationAsync(ct);
             if (baseUrl is null)
+            {
                 throw new InvalidOperationException("Integration 'identity-management' is not configured.");
+            }
 
             RestResponse<object> response = await restApi.Fetch<object>(
                 RestRequest.Post($"{baseUrl}/api/AccessResources/Sync", resources)
                            .WithSecret(secret!), ct);
 
             if (!response.Ok)
+            {
                 throw new HttpRequestException($"IdentityManagement Sync returned {response.Status}");
+            }
         }
 
         private async Task<string?> ResolveBaseUrlAsync(CancellationToken ct)
