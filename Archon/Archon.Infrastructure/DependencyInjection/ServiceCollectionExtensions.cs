@@ -8,6 +8,7 @@ using Archon.Infrastructure.Events;
 using Archon.Infrastructure.Integrations;
 using Archon.Infrastructure.IdentityManagement;
 using Archon.Infrastructure.Migrations;
+using Archon.Infrastructure.RestApi;
 using Archon.Infrastructure.MultiTenancy;
 using Archon.Infrastructure.Persistence.EF;
 using Archon.Infrastructure.Services;
@@ -79,6 +80,12 @@ namespace Archon.Infrastructure.DependencyInjection
                     .WithScopedLifetime());
             }
 
+            return services;
+        }
+
+        public static IServiceCollection AddArchonRestApi(this IServiceCollection services)
+        {
+            services.AddHttpClient<RestApi.RestApi>();
             return services;
         }
 
