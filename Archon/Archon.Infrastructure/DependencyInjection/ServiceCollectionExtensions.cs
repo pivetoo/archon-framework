@@ -65,6 +65,7 @@ namespace Archon.Infrastructure.DependencyInjection
             services.AddScoped<DbContext>(provider => provider.GetRequiredService<ArchonDbContext>());
             services.AddScoped<IAuditService, AuditService>();
             services.AddScoped<IIntegrationService, IntegrationService>();
+            services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<AuditService>();
             services.AddScoped(typeof(ICrudService<>), typeof(CrudService<>));
             services.AddScoped(typeof(CrudService<>));
