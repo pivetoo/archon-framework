@@ -10,7 +10,6 @@ namespace Archon.Infrastructure.Migrations
             Create.Table("notifications")
                 .WithColumn("id").AsInt64().PrimaryKey().Identity()
                 .WithColumn("userid").AsInt64().Nullable()
-                .WithColumn("tenantid").AsString(100).Nullable()
                 .WithColumn("title").AsString(200).NotNullable()
                 .WithColumn("message").AsString(2000).NotNullable()
                 .WithColumn("type").AsInt32().NotNullable().WithDefaultValue(0)
@@ -28,16 +27,10 @@ namespace Archon.Infrastructure.Migrations
                 .OnColumn("userid").Ascending()
                 .OnColumn("isread").Ascending()
                 .OnColumn("createdat").Descending();
-
-            Create.Index("ix_notifications_tenantid_userid")
-                .OnTable("notifications")
-                .OnColumn("tenantid").Ascending()
-                .OnColumn("userid").Ascending();
         }
 
         public override void Down()
         {
-            Delete.Index("ix_notifications_tenantid_userid").OnTable("notifications");
             Delete.Index("ix_notifications_userid_isread_createdat").OnTable("notifications");
             Delete.Table("notifications");
         }

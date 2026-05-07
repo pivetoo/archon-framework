@@ -1,5 +1,4 @@
 using Archon.Application.Abstractions;
-using Archon.Application.MultiTenancy;
 using Archon.Application.Services;
 using Archon.Core.Entities;
 using Archon.Core.Notifications;
@@ -13,23 +12,19 @@ namespace Archon.Infrastructure.Services
     {
         private readonly DbContext dbContext;
         private readonly ICurrentUser currentUser;
-        private readonly ITenantContext tenantContext;
 
-        public NotificationService(DbContext dbContext, ICurrentUser currentUser, ITenantContext tenantContext)
+        public NotificationService(DbContext dbContext, ICurrentUser currentUser)
         {
             this.dbContext = dbContext;
             this.currentUser = currentUser;
-            this.tenantContext = tenantContext;
         }
 
         public async Task<PagedResult<NotificationModel>> GetForCurrentUser(PagedRequest request, bool unreadOnly = false, CancellationToken cancellationToken = default)
         {
             long? userId = currentUser.UserId;
-            string? tenantId = tenantContext.TenantId;
 
             IQueryable<Notification> query = dbContext.Set<Notification>()
                 .AsNoTracking()
-                .Where(item => item.TenantId == tenantId)
                 .Where(item => item.UserId == null || item.UserId == userId);
 
             if (unreadOnly)
@@ -46,13 +41,11 @@ namespace Archon.Infrastructure.Services
         public async Task<NotificationModel?> GetById(long id, CancellationToken cancellationToken = default)
         {
             long? userId = currentUser.UserId;
-            string? tenantId = tenantContext.TenantId;
 
             Notification? entity = await dbContext.Set<Notification>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(item =>
                     item.Id == id &&
-                    item.TenantId == tenantId &&
                     (item.UserId == null || item.UserId == userId),
                     cancellationToken);
 
@@ -62,12 +55,10 @@ namespace Archon.Infrastructure.Services
         public async Task<int> GetUnreadCountForCurrentUser(CancellationToken cancellationToken = default)
         {
             long? userId = currentUser.UserId;
-            string? tenantId = tenantContext.TenantId;
 
             return await dbContext.Set<Notification>()
                 .AsNoTracking()
                 .CountAsync(item =>
-                    item.TenantId == tenantId &&
                     !item.IsRead &&
                     (item.UserId == null || item.UserId == userId),
                     cancellationToken);
@@ -82,7 +73,6 @@ namespace Archon.Infrastructure.Services
                 message: request.Message,
                 type: request.Type,
                 userId: request.UserId,
-                tenantId: tenantContext.TenantId,
                 link: request.Link,
                 source: request.Source,
                 referenceEntityName: request.ReferenceEntityName,
@@ -97,13 +87,11 @@ namespace Archon.Infrastructure.Services
         public async Task MarkAsRead(long id, CancellationToken cancellationToken = default)
         {
             long? userId = currentUser.UserId;
-            string? tenantId = tenantContext.TenantId;
 
             Notification? entity = await dbContext.Set<Notification>()
                 .AsTracking()
                 .FirstOrDefaultAsync(item =>
                     item.Id == id &&
-                    item.TenantId == tenantId &&
                     (item.UserId == null || item.UserId == userId),
                     cancellationToken);
 
@@ -119,12 +107,10 @@ namespace Archon.Infrastructure.Services
         public async Task MarkAllAsReadForCurrentUser(CancellationToken cancellationToken = default)
         {
             long? userId = currentUser.UserId;
-            string? tenantId = tenantContext.TenantId;
             DateTimeOffset now = DateTimeOffset.UtcNow;
 
             await dbContext.Set<Notification>()
                 .Where(item =>
-                    item.TenantId == tenantId &&
                     !item.IsRead &&
                     (item.UserId == null || item.UserId == userId))
                 .ExecuteUpdateAsync(setter => setter
@@ -137,13 +123,11 @@ namespace Archon.Infrastructure.Services
         public async Task Delete(long id, CancellationToken cancellationToken = default)
         {
             long? userId = currentUser.UserId;
-            string? tenantId = tenantContext.TenantId;
 
             Notification? entity = await dbContext.Set<Notification>()
                 .AsTracking()
                 .FirstOrDefaultAsync(item =>
                     item.Id == id &&
-                    item.TenantId == tenantId &&
                     (item.UserId == null || item.UserId == userId),
                     cancellationToken);
 
@@ -159,12 +143,9 @@ namespace Archon.Infrastructure.Services
         public async Task ClearAllForCurrentUser(CancellationToken cancellationToken = default)
         {
             long? userId = currentUser.UserId;
-            string? tenantId = tenantContext.TenantId;
 
             await dbContext.Set<Notification>()
-                .Where(item =>
-                    item.TenantId == tenantId &&
-                    (item.UserId == null || item.UserId == userId))
+                .Where(item => item.UserId == null || item.UserId == userId)
                 .ExecuteDeleteAsync(cancellationToken);
         }
 
@@ -172,7 +153,6 @@ namespace Archon.Infrastructure.Services
         {
             Id = entity.Id,
             UserId = entity.UserId,
-            TenantId = entity.TenantId,
             Title = entity.Title,
             Message = entity.Message,
             Type = entity.Type,

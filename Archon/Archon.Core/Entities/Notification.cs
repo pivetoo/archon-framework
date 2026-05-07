@@ -6,8 +6,6 @@ namespace Archon.Core.Entities
     {
         public long? UserId { get; private set; }
 
-        public string? TenantId { get; private set; }
-
         public string Title { get; private set; } = string.Empty;
 
         public string Message { get; private set; } = string.Empty;
@@ -35,7 +33,6 @@ namespace Archon.Core.Entities
             string message,
             NotificationType type = NotificationType.Info,
             long? userId = null,
-            string? tenantId = null,
             string? link = null,
             string? source = null,
             string? referenceEntityName = null,
@@ -48,7 +45,6 @@ namespace Archon.Core.Entities
             Message = message.Trim();
             Type = type;
             UserId = userId;
-            TenantId = Normalize(tenantId);
             Link = Normalize(link);
             Source = Normalize(source);
             ReferenceEntityName = Normalize(referenceEntityName);

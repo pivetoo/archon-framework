@@ -20,7 +20,6 @@ namespace Archon.Infrastructure.Persistence.EF.Configurations
                 .IsRequired()
                 .HasMaxLength(2000);
 
-            builder.Property(entity => entity.TenantId).HasMaxLength(100);
             builder.Property(entity => entity.Link).HasMaxLength(500);
             builder.Property(entity => entity.Source).HasMaxLength(100);
             builder.Property(entity => entity.ReferenceEntityName).HasMaxLength(200);
@@ -28,9 +27,6 @@ namespace Archon.Infrastructure.Persistence.EF.Configurations
 
             builder.HasIndex(entity => new { entity.UserId, entity.IsRead, entity.CreatedAt })
                 .HasDatabaseName("ix_notifications_userid_isread_createdat");
-
-            builder.HasIndex(entity => new { entity.TenantId, entity.UserId })
-                .HasDatabaseName("ix_notifications_tenantid_userid");
         }
     }
 }

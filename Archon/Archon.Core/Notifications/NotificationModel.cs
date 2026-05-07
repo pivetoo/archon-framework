@@ -8,8 +8,6 @@ namespace Archon.Core.Notifications
 
         public long? UserId { get; init; }
 
-        public string? TenantId { get; init; }
-
         public string Title { get; init; } = string.Empty;
 
         public string Message { get; init; } = string.Empty;
