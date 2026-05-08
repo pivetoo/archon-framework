@@ -6,6 +6,6 @@ namespace Archon.Infrastructure.IdentityManagement
 
         public string Audience { get; init; } = string.Empty;
 
-        public IReadOnlyList<string> Audiences { get; init; } = [];
+        public string[] Audiences { get; set; } = [];
     }
 }
