@@ -23,14 +23,19 @@ namespace Archon.Api.Security.Authentication
                 string? authorizationHeader = Request.Headers.Authorization.FirstOrDefault();
                 if (string.IsNullOrWhiteSpace(authorizationHeader) || !authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
                 {
+                    Logger.LogWarning("JWT auth: no Bearer header on {Method} {Path}. Header present: {HasHeader}.",
+                        Request.Method, Request.Path, !string.IsNullOrWhiteSpace(authorizationHeader));
                     return AuthenticateResult.NoResult();
                 }
 
                 string token = authorizationHeader["Bearer ".Length..].Trim();
                 if (string.IsNullOrWhiteSpace(token))
                 {
+                    Logger.LogWarning("JWT auth: empty Bearer token on {Method} {Path}.", Request.Method, Request.Path);
                     return AuthenticateResult.NoResult();
                 }
+
+                Logger.LogInformation("JWT auth: validating token on {Method} {Path}.", Request.Method, Request.Path);
 
                 var principal = await jwtValidator.ValidateTokenAsync(token, Context.RequestAborted);
                 if (principal is null)
