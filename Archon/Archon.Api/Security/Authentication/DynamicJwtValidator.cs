@@ -1,5 +1,4 @@
 using Archon.Infrastructure.IdentityManagement;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -11,13 +10,11 @@ namespace Archon.Api.Security.Authentication
     {
         private readonly IdentityManagementClient identityManagementClient;
         private readonly JwtOptions jwtOptions;
-        private readonly ILogger<DynamicJwtValidator> logger;
 
-        public DynamicJwtValidator(IdentityManagementClient identityManagementClient, IOptions<JwtOptions> jwtOptions, ILogger<DynamicJwtValidator> logger)
+        public DynamicJwtValidator(IdentityManagementClient identityManagementClient, IOptions<JwtOptions> jwtOptions)
         {
             this.identityManagementClient = identityManagementClient;
             this.jwtOptions = jwtOptions.Value;
-            this.logger = logger;
         }
 
         public async Task<ClaimsPrincipal?> ValidateTokenAsync(string token, CancellationToken cancellationToken = default)
@@ -28,7 +25,6 @@ namespace Archon.Api.Security.Authentication
 
             if (signingKeys.Count == 0)
             {
-                logger.LogWarning("JWT validation aborted: no signing keys available.");
                 return null;
             }
 
@@ -36,17 +32,8 @@ namespace Archon.Api.Security.Authentication
                 ? jwtOptions.Issuer
                 : configuration?.Issuer ?? string.Empty;
 
-            List<string> validAudiences = (jwtOptions.Audiences ?? Array.Empty<string>())
-                .Where(item => !string.IsNullOrWhiteSpace(item))
-                .ToList();
-            if (!string.IsNullOrWhiteSpace(jwtOptions.Audience) && !validAudiences.Contains(jwtOptions.Audience))
+            if (string.IsNullOrWhiteSpace(issuer) || string.IsNullOrWhiteSpace(jwtOptions.Audience))
             {
-                validAudiences.Add(jwtOptions.Audience);
-            }
-
-            if (string.IsNullOrWhiteSpace(issuer) || validAudiences.Count == 0)
-            {
-                logger.LogWarning("JWT validation aborted: issuer='{Issuer}' validAudiences={Count}.", issuer, validAudiences.Count);
                 return null;
             }
 
@@ -55,22 +42,14 @@ namespace Archon.Api.Security.Authentication
                 ValidateIssuer = true,
                 ValidIssuer = issuer,
                 ValidateAudience = true,
-                ValidAudiences = validAudiences,
+                ValidAudience = jwtOptions.Audience,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKeys = signingKeys,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.FromMinutes(1)
             };
 
-            try
-            {
-                return tokenHandler.ValidateToken(token, validationParameters, out _);
-            }
-            catch (Exception exception)
-            {
-                logger.LogWarning(exception, "JWT validation failed. validAudiences=[{Audiences}] issuer='{Issuer}'.", string.Join(",", validAudiences), issuer);
-                throw;
-            }
+            return tokenHandler.ValidateToken(token, validationParameters, out _);
         }
     }
 }

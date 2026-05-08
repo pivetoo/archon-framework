@@ -5,7 +5,5 @@ namespace Archon.Infrastructure.IdentityManagement
         public string Issuer { get; init; } = string.Empty;
 
         public string Audience { get; init; } = string.Empty;
-
-        public string[] Audiences { get; set; } = [];
     }
 }
