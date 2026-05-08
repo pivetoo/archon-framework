@@ -101,6 +101,7 @@ namespace Archon.Infrastructure.DependencyInjection
             services.AddSingleton(Options.Create(jwtOptions));
             services.AddArchonRestApi();
             services.AddScoped<IdentityManagementClient>();
+            services.AddScoped<IdentityUsersClient>();
 
             return services;
         }
