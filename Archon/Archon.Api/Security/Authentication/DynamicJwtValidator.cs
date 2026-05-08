@@ -32,7 +32,13 @@ namespace Archon.Api.Security.Authentication
                 ? jwtOptions.Issuer
                 : configuration?.Issuer ?? string.Empty;
 
-            if (string.IsNullOrWhiteSpace(issuer) || string.IsNullOrWhiteSpace(jwtOptions.Audience))
+            List<string> validAudiences = jwtOptions.Audiences?.Where(item => !string.IsNullOrWhiteSpace(item)).ToList() ?? new List<string>();
+            if (!string.IsNullOrWhiteSpace(jwtOptions.Audience) && !validAudiences.Contains(jwtOptions.Audience))
+            {
+                validAudiences.Add(jwtOptions.Audience);
+            }
+
+            if (string.IsNullOrWhiteSpace(issuer) || validAudiences.Count == 0)
             {
                 return null;
             }
@@ -42,7 +48,7 @@ namespace Archon.Api.Security.Authentication
                 ValidateIssuer = true,
                 ValidIssuer = issuer,
                 ValidateAudience = true,
-                ValidAudience = jwtOptions.Audience,
+                ValidAudiences = validAudiences,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKeys = signingKeys,
                 ValidateLifetime = true,
