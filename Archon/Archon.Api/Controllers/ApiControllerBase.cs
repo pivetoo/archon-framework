@@ -71,7 +71,7 @@ namespace Archon.Api.Controllers
 
         protected IActionResult Http204()
         {
-            return StatusCode(StatusCodes.Status200OK, CreateResponse(Localizer["operation.completed"]));
+            return StatusCode(StatusCodes.Status200OK, CreateResponse(Localizer["operation.completed"], data: new { ok = true }));
         }
 
         protected IActionResult Http400(string message, object? errors = null)
