@@ -75,7 +75,21 @@ namespace Archon.Api.ExceptionHandling
                 "record.",
                 "error.",
                 "auth.",
-                "tenant."
+                "tenant.",
+                "user.",
+                "role.",
+                "contract.",
+                "company.",
+                "proposal.",
+                "opportunity.",
+                "campaign.",
+                "creator.",
+                "brand.",
+                "financial.",
+                "deliverable.",
+                "integration.",
+                "automation.",
+                "notification."
             ];
 
             return clientErrorPrefixes.Any(prefix => normalized.StartsWith(prefix, StringComparison.Ordinal));
