@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Archon.Api.Localization;
 
 namespace Archon.Api.ExceptionHandling
@@ -20,8 +21,10 @@ namespace Archon.Api.ExceptionHandling
 
         public async Task InvokeAsync(HttpContext context)
         {
-            IStringLocalizer<ArchonApiResource> localizer = context.RequestServices.GetRequiredService<IStringLocalizer<ArchonApiResource>>();
+            IStringLocalizer<ArchonApiResource> archonLocalizer = context.RequestServices.GetRequiredService<IStringLocalizer<ArchonApiResource>>();
             ILogger<ExceptionHandlingMiddleware> logger = context.RequestServices.GetRequiredService<ILogger<ExceptionHandlingMiddleware>>();
+            LocalizationCatalogOptions catalog = context.RequestServices.GetRequiredService<IOptions<LocalizationCatalogOptions>>().Value;
+            IStringLocalizerFactory localizerFactory = context.RequestServices.GetRequiredService<IStringLocalizerFactory>();
 
             try
             {
@@ -30,33 +33,33 @@ namespace Archon.Api.ExceptionHandling
             catch (UnauthorizedAccessException exception)
             {
                 logger.LogWarning(exception, "Unauthorized access attempt at {Path}", context.Request.Path);
-                await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, Translate(localizer, exception.Message));
+                await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
             }
             catch (KeyNotFoundException exception)
             {
-                await WriteErrorAsync(context, StatusCodes.Status404NotFound, Translate(localizer, exception.Message));
+                await WriteErrorAsync(context, StatusCodes.Status404NotFound, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
             }
             catch (InvalidOperationException exception) when (IsClientError(exception.Message))
             {
-                await WriteErrorAsync(context, StatusCodes.Status400BadRequest, Translate(localizer, exception.Message));
+                await WriteErrorAsync(context, StatusCodes.Status400BadRequest, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
             }
             catch (InvalidOperationException exception)
             {
                 logger.LogError(exception, "Internal invalid operation at {Path}", context.Request.Path);
-                await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, localizer["error.unexpected"]);
+                await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, archonLocalizer["error.unexpected"]);
             }
             catch (ArgumentException exception)
             {
-                await WriteErrorAsync(context, StatusCodes.Status400BadRequest, Translate(localizer, exception.Message));
+                await WriteErrorAsync(context, StatusCodes.Status400BadRequest, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
             }
             catch (IntegrityException exception)
             {
-                await WriteErrorAsync(context, StatusCodes.Status409Conflict, Translate(localizer, exception.Message));
+                await WriteErrorAsync(context, StatusCodes.Status409Conflict, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
             }
             catch (Exception exception)
             {
                 logger.LogError(exception, "Unexpected error at {Path}: {Message}", context.Request.Path, exception.Message);
-                await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, localizer["error.unexpected"]);
+                await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, archonLocalizer["error.unexpected"]);
             }
         }
 
@@ -95,15 +98,31 @@ namespace Archon.Api.ExceptionHandling
             return clientErrorPrefixes.Any(prefix => normalized.StartsWith(prefix, StringComparison.Ordinal));
         }
 
-        private static string Translate(IStringLocalizer<ArchonApiResource> localizer, string message)
+        private static string ResolveMessage(
+            IStringLocalizer<ArchonApiResource> archonLocalizer,
+            IStringLocalizerFactory factory,
+            LocalizationCatalogOptions catalog,
+            string message)
         {
             if (string.IsNullOrWhiteSpace(message))
             {
-                return localizer["error.unexpected.short"];
+                return archonLocalizer["error.unexpected.short"];
             }
 
-            LocalizedString localized = localizer[message];
-            return localized.ResourceNotFound ? message : localized.Value;
+            // Tenta primeiro nos resources da aplicacao consumidora (mais especificos)
+            foreach (Type resourceType in catalog.ResourceTypes)
+            {
+                IStringLocalizer appLocalizer = factory.Create(resourceType);
+                LocalizedString localized = appLocalizer[message];
+                if (!localized.ResourceNotFound)
+                {
+                    return localized.Value;
+                }
+            }
+
+            // Cai no resource do Archon
+            LocalizedString archon = archonLocalizer[message];
+            return archon.ResourceNotFound ? message : archon.Value;
         }
 
         private static Task WriteErrorAsync(HttpContext context, int statusCode, string message)
