@@ -19,7 +19,7 @@ namespace Archon.Infrastructure.MultiTenancy
 
         public string DatabaseType { get; init; } = nameof(DatabaseProvider.PostgreSql);
 
-        public string? Schema { get; init; }
+        public string? Schema { get; init; } = "public";
 
         public string? IntegrationSecret { get; init; }
 

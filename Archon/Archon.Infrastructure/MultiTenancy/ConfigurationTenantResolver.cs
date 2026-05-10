@@ -143,7 +143,7 @@ namespace Archon.Infrastructure.MultiTenancy
                 CompanyName = option.CompanyName,
                 ApplicationId = option.ApplicationId,
                 ConnectionString = connectionString,
-                Schema = option.Schema,
+                Schema = string.IsNullOrWhiteSpace(option.Schema) ? "public" : option.Schema,
                 DatabaseProvider = option.GetDatabaseProvider(),
                 IntegrationSecret = option.IntegrationSecret
             };
