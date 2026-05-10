@@ -66,26 +66,17 @@ namespace Archon.Infrastructure.MultiTenancy
 
         private TenantInfo? ResolveFromConfiguration(string? tenantId)
         {
-            IConfigurationSection tenantDatabasesSection = configuration.GetSection("TenantDatabases");
-            IEnumerable<IConfigurationSection> tenantSections = tenantDatabasesSection.GetChildren();
-
             if (string.IsNullOrWhiteSpace(tenantId))
             {
-                IConfigurationSection? firstTenant = tenantSections.FirstOrDefault();
-                return firstTenant is null ? null : CreateTenantInfo(firstTenant);
+                return null;
             }
 
-            foreach (IConfigurationSection tenantSection in tenantSections)
-            {
-                string? configuredTenantId = tenantSection["TenantId"];
-                if (!string.IsNullOrWhiteSpace(configuredTenantId) &&
-                    string.Equals(configuredTenantId, tenantId, StringComparison.OrdinalIgnoreCase))
-                {
-                    return CreateTenantInfo(tenantSection);
-                }
+            IConfigurationSection tenantDatabasesSection = configuration.GetSection("TenantDatabases");
+            string normalizedTenantId = tenantId.Trim();
 
-                string? configuredApplicationId = tenantSection["ApplicationId"];
-                if (string.Equals(configuredApplicationId, tenantId, StringComparison.OrdinalIgnoreCase))
+            foreach (IConfigurationSection tenantSection in tenantDatabasesSection.GetChildren())
+            {
+                if (string.Equals(tenantSection.Key, normalizedTenantId, StringComparison.OrdinalIgnoreCase))
                 {
                     return CreateTenantInfo(tenantSection);
                 }
