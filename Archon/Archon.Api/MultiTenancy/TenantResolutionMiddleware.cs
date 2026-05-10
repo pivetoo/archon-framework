@@ -15,20 +15,26 @@ namespace Archon.Api.MultiTenancy
 
         public async Task InvokeAsync(HttpContext context, ITenantResolver tenantResolver, ITenantContext tenantContext)
         {
-            string? tenantId = context.User.FindFirst("tenant_id")?.Value;
-            tenantId ??= context.User.FindFirst("contract_id")?.Value;
-            tenantId ??= TryExtractTenantIdFromJwt(context);
+            string? tenantId = context.User.FindFirst("tenant_id")?.Value
+                ?? context.User.FindFirst("contract_id")?.Value
+                ?? TryExtractTenantIdFromJwt(context);
+
+            if (string.IsNullOrWhiteSpace(tenantId))
+            {
+                // Request sem tenant_id no JWT (ex.: server-to-server com X-Api-Key/Basic Auth, ou endpoints anonimos).
+                // Deixa o pipeline seguir; o RequireAccessAttribute popula o tenant depois quando aplicavel.
+                await next(context);
+                return;
+            }
 
             TenantInfo? tenant = await tenantResolver.ResolveAsync(tenantId, context.RequestAborted);
 
-            if (tenant is null && !string.IsNullOrWhiteSpace(tenantId))
-            {
-                tenant = await tenantResolver.ResolveAsync(null, context.RequestAborted);
-            }
-
             if (tenant is null)
             {
-                throw new InvalidOperationException("tenant.notConfigured");
+                // tenantId presente mas nao reconhecido: erro explicito, sem fallback.
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new { message = "tenant.notFound", tenantId });
+                return;
             }
 
             if (tenantContext is MultiTenantContext multiTenantContext)
