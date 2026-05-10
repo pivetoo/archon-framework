@@ -14,11 +14,15 @@ namespace Archon.Api.MultiTenancy
             this.next = next;
         }
 
+        private const string FixedTenantKey = "FixedTenantId";
+
         public async Task InvokeAsync(HttpContext context, ITenantResolver tenantResolver, ITenantContext tenantContext, IConfiguration configuration)
         {
-            string? fixedTenantId = configuration["FixedTenantId"];
-            string? tenantId = !string.IsNullOrWhiteSpace(fixedTenantId)
-                ? fixedTenantId
+            bool isFixedMode = configuration.GetSection("TenantDatabases").GetChildren()
+                .Any(section => string.Equals(section.Key, FixedTenantKey, StringComparison.OrdinalIgnoreCase));
+
+            string? tenantId = isFixedMode
+                ? FixedTenantKey
                 : context.User.FindFirst("tenant_id")?.Value
                     ?? context.User.FindFirst("contract_id")?.Value
                     ?? TryExtractTenantIdFromJwt(context);
