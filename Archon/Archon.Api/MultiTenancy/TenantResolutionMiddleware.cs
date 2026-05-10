@@ -1,5 +1,6 @@
 using Archon.Application.MultiTenancy;
 using Archon.Infrastructure.MultiTenancy;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 
 namespace Archon.Api.MultiTenancy
@@ -13,11 +14,14 @@ namespace Archon.Api.MultiTenancy
             this.next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context, ITenantResolver tenantResolver, ITenantContext tenantContext)
+        public async Task InvokeAsync(HttpContext context, ITenantResolver tenantResolver, ITenantContext tenantContext, IConfiguration configuration)
         {
-            string? tenantId = context.User.FindFirst("tenant_id")?.Value
-                ?? context.User.FindFirst("contract_id")?.Value
-                ?? TryExtractTenantIdFromJwt(context);
+            string? fixedTenantId = configuration["FixedTenantId"];
+            string? tenantId = !string.IsNullOrWhiteSpace(fixedTenantId)
+                ? fixedTenantId
+                : context.User.FindFirst("tenant_id")?.Value
+                    ?? context.User.FindFirst("contract_id")?.Value
+                    ?? TryExtractTenantIdFromJwt(context);
 
             if (string.IsNullOrWhiteSpace(tenantId))
             {
