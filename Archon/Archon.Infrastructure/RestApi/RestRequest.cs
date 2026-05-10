@@ -28,7 +28,11 @@ namespace Archon.Infrastructure.RestApi
             return this;
         }
 
+        public RestRequest WithApiKey(string apiKey)
+            => WithHeader("X-Api-Key", apiKey);
+
+        [Obsolete("Use WithApiKey. Mantido apenas para compatibilidade durante a transicao.")]
         public RestRequest WithSecret(string secret)
-            => WithHeader("X-Integration-Secret", secret);
+            => WithApiKey(secret);
     }
 }

@@ -27,7 +27,7 @@ namespace Archon.Api.Attributes
                 return;
             }
 
-            AuthorizeIntegrationSecret(context);
+            AuthorizeApiKey(context);
         }
 
         private static void AuthorizeUser(AuthorizationFilterContext context, ClaimsPrincipal user)
@@ -52,7 +52,7 @@ namespace Archon.Api.Attributes
             context.Result = new ForbidResult();
         }
 
-        private static void AuthorizeIntegrationSecret(AuthorizationFilterContext context)
+        private static void AuthorizeApiKey(AuthorizationFilterContext context)
         {
             if (context.HttpContext.RequestServices is null)
             {
@@ -60,15 +60,17 @@ namespace Archon.Api.Attributes
                 return;
             }
 
-            string? providedSecret = context.HttpContext.Request.Headers["X-Integration-Secret"].FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(providedSecret))
+            string? providedApiKey = context.HttpContext.Request.Headers["X-Api-Key"].FirstOrDefault()
+                ?? context.HttpContext.Request.Headers["X-Integration-Secret"].FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(providedApiKey))
             {
                 context.Result = new UnauthorizedResult();
                 return;
             }
 
             ITenantResolver tenantResolver = context.HttpContext.RequestServices.GetRequiredService<ITenantResolver>();
-            TenantInfo? tenant = tenantResolver.ResolveBySecretAsync(providedSecret).GetAwaiter().GetResult();
+            TenantInfo? tenant = tenantResolver.ResolveByApiKeyAsync(providedApiKey).GetAwaiter().GetResult();
 
             if (tenant is null)
             {

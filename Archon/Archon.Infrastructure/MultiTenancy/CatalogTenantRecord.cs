@@ -14,7 +14,7 @@ namespace Archon.Infrastructure.MultiTenancy
 
         public string? Schema { get; init; }
 
-        public string? IntegrationSecret { get; init; }
+        public string? ApiKey { get; init; }
 
         public bool IsDefault { get; init; }
     }

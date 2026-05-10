@@ -85,20 +85,20 @@ namespace Archon.Infrastructure.MultiTenancy
             return null;
         }
 
-        public async Task<TenantInfo?> ResolveBySecretAsync(string? integrationSecret, CancellationToken cancellationToken = default)
+        public async Task<TenantInfo?> ResolveByApiKeyAsync(string? apiKey, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(integrationSecret))
+            if (string.IsNullOrWhiteSpace(apiKey))
             {
                 return null;
             }
 
-            string cacheKey = $"tenant:secret:{currentApplicationId}:{integrationSecret.Trim()}";
+            string cacheKey = $"tenant:apikey:{currentApplicationId}:{apiKey.Trim()}";
             if (cache.TryGetValue(cacheKey, out TenantInfo? cachedTenant))
             {
                 return cachedTenant;
             }
 
-            TenantInfo? tenant = await ResolveBySecretFromCatalogAsync(integrationSecret, cancellationToken);
+            TenantInfo? tenant = await ResolveByApiKeyFromCatalogAsync(apiKey, cancellationToken);
             if (tenant is not null)
             {
                 cache.Set(cacheKey, tenant, tenantCatalogOptions.CacheTtl);
@@ -108,8 +108,8 @@ namespace Archon.Infrastructure.MultiTenancy
             IConfigurationSection tenantDatabasesSection = configuration.GetSection("TenantDatabases");
             foreach (IConfigurationSection tenantSection in tenantDatabasesSection.GetChildren())
             {
-                string? configuredSecret = tenantSection["IntegrationSecret"];
-                if (string.Equals(configuredSecret, integrationSecret, StringComparison.Ordinal))
+                string? configuredApiKey = tenantSection["ApiKey"] ?? tenantSection["IntegrationSecret"];
+                if (string.Equals(configuredApiKey, apiKey, StringComparison.Ordinal))
                 {
                     return CreateTenantInfo(tenantSection);
                 }
@@ -128,6 +128,12 @@ namespace Archon.Infrastructure.MultiTenancy
 
             TenantDatabaseOption option = tenantSection.Get<TenantDatabaseOption>() ?? new TenantDatabaseOption();
 
+            string? apiKey = option.ApiKey;
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                apiKey = tenantSection["IntegrationSecret"];
+            }
+
             return new TenantInfo
             {
                 TenantId = tenantSection.Key,
@@ -136,7 +142,7 @@ namespace Archon.Infrastructure.MultiTenancy
                 ConnectionString = connectionString,
                 Schema = string.IsNullOrWhiteSpace(option.Schema) ? "public" : option.Schema,
                 DatabaseProvider = option.GetDatabaseProvider(),
-                IntegrationSecret = option.IntegrationSecret
+                ApiKey = apiKey
             };
         }
 
@@ -162,7 +168,7 @@ namespace Archon.Infrastructure.MultiTenancy
             return record is null ? null : CreateTenantInfo(record);
         }
 
-        private async Task<TenantInfo?> ResolveBySecretFromCatalogAsync(string integrationSecret, CancellationToken cancellationToken)
+        private async Task<TenantInfo?> ResolveByApiKeyFromCatalogAsync(string apiKey, CancellationToken cancellationToken)
         {
             if (!tenantCatalogOptions.IsConfigured)
             {
@@ -172,7 +178,7 @@ namespace Archon.Infrastructure.MultiTenancy
             await using DbConnection connection = CreateCatalogConnection();
             await connection.OpenAsync(cancellationToken);
 
-            List<CatalogTenantRecord> records = await LoadTenantRecordsAsync(connection, integrationSecret.Trim(), cancellationToken);
+            List<CatalogTenantRecord> records = await LoadTenantRecordsAsync(connection, apiKey.Trim(), cancellationToken);
             CatalogTenantRecord? record = records.FirstOrDefault();
 
             return record is null ? null : CreateTenantInfo(record);
@@ -193,7 +199,7 @@ namespace Archon.Infrastructure.MultiTenancy
                 ConnectionString = record.ConnectionString,
                 Schema = string.IsNullOrWhiteSpace(record.Schema) ? "public" : record.Schema,
                 DatabaseProvider = ResolveDatabaseProvider(record.DatabaseType),
-                IntegrationSecret = record.IntegrationSecret
+                ApiKey = record.ApiKey
             };
         }
 
@@ -202,7 +208,7 @@ namespace Archon.Infrastructure.MultiTenancy
             return new NpgsqlConnection(tenantCatalogOptions.ConnectionString);
         }
 
-        private async Task<List<CatalogTenantRecord>> LoadTenantRecordsAsync(DbConnection connection, string? integrationSecret, CancellationToken cancellationToken)
+        private async Task<List<CatalogTenantRecord>> LoadTenantRecordsAsync(DbConnection connection, string? apiKey, CancellationToken cancellationToken)
         {
             await using DbCommand command = connection.CreateCommand();
             command.CommandText =
@@ -219,12 +225,12 @@ namespace Archon.Infrastructure.MultiTenancy
                 from {GetTenantDatabasesTableName()}
                 where isactive = @isactive
                   and (@applicationid = '' or applicationid = @applicationid)
-                  and (@integrationsecret is null or integrationsecret = @integrationsecret)
+                  and (@apikey is null or integrationsecret = @apikey)
                 """;
 
             AddParameter(command, "@isactive", true);
             AddParameter(command, "@applicationid", currentApplicationId);
-            AddParameter(command, "@integrationsecret", integrationSecret);
+            AddParameter(command, "@apikey", apiKey);
 
             List<CatalogTenantRecord> records = new();
             await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -239,7 +245,7 @@ namespace Archon.Infrastructure.MultiTenancy
                     ConnectionString = reader.GetString(3),
                     DatabaseType = reader.GetString(4),
                     Schema = reader.IsDBNull(5) ? null : reader.GetString(5),
-                    IntegrationSecret = reader.IsDBNull(6) ? null : reader.GetString(6),
+                    ApiKey = reader.IsDBNull(6) ? null : reader.GetString(6),
                     IsDefault = reader.GetBoolean(7)
                 });
             }

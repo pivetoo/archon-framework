@@ -101,7 +101,7 @@ namespace Archon.Infrastructure.IdentityManagement
 
             RestResponse<object> response = await restApi.Fetch<object>(
                 RestRequest.Post($"{baseUrl}/api/AccessResources/Sync", resources)
-                           .WithSecret(secret!), ct);
+                           .WithApiKey(secret!), ct);
 
             if (!response.Ok)
             {
@@ -142,13 +142,13 @@ namespace Archon.Infrastructure.IdentityManagement
                 return (null, null);
             }
 
-            string? secret = integration.GetParameter("IntegrationSecret");
-            if (string.IsNullOrWhiteSpace(secret))
+            string? apiKey = integration.GetParameter("ApiKey") ?? integration.GetParameter("IntegrationSecret");
+            if (string.IsNullOrWhiteSpace(apiKey))
             {
-                Console.WriteLine("IdentityManagementClient: integration 'identity-management' is configured without IntegrationSecret.");
+                Console.WriteLine("IdentityManagementClient: integration 'identity-management' is configured without ApiKey.");
             }
 
-            return (integration.BaseUrl, secret);
+            return (integration.BaseUrl, apiKey);
         }
     }
 }

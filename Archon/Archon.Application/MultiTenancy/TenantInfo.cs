@@ -16,6 +16,6 @@ namespace Archon.Application.MultiTenancy
 
         public DatabaseProvider DatabaseProvider { get; init; } = DatabaseProvider.PostgreSql;
 
-        public string? IntegrationSecret { get; init; }
+        public string? ApiKey { get; init; }
     }
 }

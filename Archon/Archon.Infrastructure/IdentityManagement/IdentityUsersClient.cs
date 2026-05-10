@@ -28,7 +28,7 @@ namespace Archon.Infrastructure.IdentityManagement
             }
 
             RestResponse<ApiResponse<List<IdentityUserDto>>> response = await restApi.Fetch<ApiResponse<List<IdentityUserDto>>>(
-                RestRequest.Get($"{baseUrl}/api/Users/GetActive").WithSecret(secret!), ct);
+                RestRequest.Get($"{baseUrl}/api/Users/GetActive").WithApiKey(secret!), ct);
 
             if (!response.Ok)
             {
@@ -47,7 +47,7 @@ namespace Archon.Infrastructure.IdentityManagement
             }
 
             RestResponse<ApiResponse<IdentityUserDto>> response = await restApi.Fetch<ApiResponse<IdentityUserDto>>(
-                RestRequest.Get($"{baseUrl}/api/Users/GetById/{userId}").WithSecret(secret!), ct);
+                RestRequest.Get($"{baseUrl}/api/Users/GetById/{userId}").WithApiKey(secret!), ct);
 
             if (!response.Ok)
             {
@@ -71,7 +71,7 @@ namespace Archon.Infrastructure.IdentityManagement
             }
 
             RestResponse<ApiResponse<List<ContractUserDto>>> response = await restApi.Fetch<ApiResponse<List<ContractUserDto>>>(
-                RestRequest.Get($"{baseUrl}/api/Users/GetByContract/{contractId}").WithSecret(secret!), ct);
+                RestRequest.Get($"{baseUrl}/api/Users/GetByContract/{contractId}").WithApiKey(secret!), ct);
 
             if (!response.Ok)
             {
@@ -90,7 +90,7 @@ namespace Archon.Infrastructure.IdentityManagement
             }
 
             RestResponse<ApiResponse<ContractUserDto>> response = await restApi.Fetch<ApiResponse<ContractUserDto>>(
-                RestRequest.Post($"{baseUrl}/api/Users/CreateInContract", payload).WithSecret(secret!), ct);
+                RestRequest.Post($"{baseUrl}/api/Users/CreateInContract", payload).WithApiKey(secret!), ct);
 
             if (!response.Ok || response.Data?.Data is null)
             {
@@ -110,7 +110,7 @@ namespace Archon.Infrastructure.IdentityManagement
 
             object body = new { ContractId = contractId, RoleId = roleId };
             RestResponse<ApiResponse<ContractUserDto>> response = await restApi.Fetch<ApiResponse<ContractUserDto>>(
-                RestRequest.Put($"{baseUrl}/api/Users/UpdateRoleInContract/{userId}", body).WithSecret(secret!), ct);
+                RestRequest.Put($"{baseUrl}/api/Users/UpdateRoleInContract/{userId}", body).WithApiKey(secret!), ct);
 
             if (!response.Ok || response.Data?.Data is null)
             {
@@ -130,7 +130,7 @@ namespace Archon.Infrastructure.IdentityManagement
 
             object body = new { IsActive = isActive };
             RestResponse<ApiResponse<object>> response = await restApi.Fetch<ApiResponse<object>>(
-                RestRequest.Put($"{baseUrl}/api/Users/SetActive/{userId}", body).WithSecret(secret!), ct);
+                RestRequest.Put($"{baseUrl}/api/Users/SetActive/{userId}", body).WithApiKey(secret!), ct);
 
             if (!response.Ok)
             {
@@ -147,7 +147,7 @@ namespace Archon.Infrastructure.IdentityManagement
             }
 
             RestResponse<ApiResponse<List<ContractRoleDto>>> response = await restApi.Fetch<ApiResponse<List<ContractRoleDto>>>(
-                RestRequest.Get($"{baseUrl}/api/Roles/GetByContract/{contractId}").WithSecret(secret!), ct);
+                RestRequest.Get($"{baseUrl}/api/Roles/GetByContract/{contractId}").WithApiKey(secret!), ct);
 
             if (!response.Ok)
             {
@@ -172,13 +172,13 @@ namespace Archon.Infrastructure.IdentityManagement
                 return (null, null);
             }
 
-            string? secret = integration.GetParameter("IntegrationSecret");
-            if (string.IsNullOrWhiteSpace(secret))
+            string? apiKey = integration.GetParameter("ApiKey") ?? integration.GetParameter("IntegrationSecret");
+            if (string.IsNullOrWhiteSpace(apiKey))
             {
-                Console.WriteLine("IdentityUsersClient: integration 'identity-management' is configured without IntegrationSecret.");
+                Console.WriteLine("IdentityUsersClient: integration 'identity-management' is configured without ApiKey.");
             }
 
-            return (integration.BaseUrl, secret);
+            return (integration.BaseUrl, apiKey);
         }
     }
 

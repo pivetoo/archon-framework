@@ -19,7 +19,7 @@ namespace Archon.Infrastructure.MultiTenancy
 
         public string? Schema { get; init; } = "public";
 
-        public string? IntegrationSecret { get; init; }
+        public string? ApiKey { get; init; }
 
         public DatabaseProvider GetDatabaseProvider()
         {
