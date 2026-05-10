@@ -21,14 +21,14 @@ namespace Archon.Infrastructure.IdentityManagement
 
         public async Task<List<IdentityUserDto>> GetActiveUsersAsync(CancellationToken ct = default)
         {
-            (string? baseUrl, string? secret) = await ResolveIntegrationAsync(ct);
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
             if (baseUrl is null)
             {
                 throw new InvalidOperationException("Integration 'identity-management' is not configured.");
             }
 
             RestResponse<ApiResponse<List<IdentityUserDto>>> response = await restApi.Fetch<ApiResponse<List<IdentityUserDto>>>(
-                RestRequest.Get($"{baseUrl}/api/Users/GetActive").WithApiKey(secret!), ct);
+                RestRequest.Get($"{baseUrl}/api/Users/GetActive").WithTenantApiKey(tenantId, secret!), ct);
 
             if (!response.Ok)
             {
@@ -40,14 +40,14 @@ namespace Archon.Infrastructure.IdentityManagement
 
         public async Task<IdentityUserDto?> GetUserByIdAsync(long userId, CancellationToken ct = default)
         {
-            (string? baseUrl, string? secret) = await ResolveIntegrationAsync(ct);
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
             if (baseUrl is null)
             {
                 throw new InvalidOperationException("Integration 'identity-management' is not configured.");
             }
 
             RestResponse<ApiResponse<IdentityUserDto>> response = await restApi.Fetch<ApiResponse<IdentityUserDto>>(
-                RestRequest.Get($"{baseUrl}/api/Users/GetById/{userId}").WithApiKey(secret!), ct);
+                RestRequest.Get($"{baseUrl}/api/Users/GetById/{userId}").WithTenantApiKey(tenantId, secret!), ct);
 
             if (!response.Ok)
             {
@@ -64,14 +64,14 @@ namespace Archon.Infrastructure.IdentityManagement
 
         public async Task<List<ContractUserDto>> GetUsersByContractAsync(long contractId, CancellationToken ct = default)
         {
-            (string? baseUrl, string? secret) = await ResolveIntegrationAsync(ct);
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
             if (baseUrl is null)
             {
                 throw new InvalidOperationException("Integration 'identity-management' is not configured.");
             }
 
             RestResponse<ApiResponse<List<ContractUserDto>>> response = await restApi.Fetch<ApiResponse<List<ContractUserDto>>>(
-                RestRequest.Get($"{baseUrl}/api/Users/GetByContract/{contractId}").WithApiKey(secret!), ct);
+                RestRequest.Get($"{baseUrl}/api/Users/GetByContract/{contractId}").WithTenantApiKey(tenantId, secret!), ct);
 
             if (!response.Ok)
             {
@@ -83,14 +83,14 @@ namespace Archon.Infrastructure.IdentityManagement
 
         public async Task<ContractUserDto> CreateUserInContractAsync(CreateUserInContractPayload payload, CancellationToken ct = default)
         {
-            (string? baseUrl, string? secret) = await ResolveIntegrationAsync(ct);
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
             if (baseUrl is null)
             {
                 throw new InvalidOperationException("Integration 'identity-management' is not configured.");
             }
 
             RestResponse<ApiResponse<ContractUserDto>> response = await restApi.Fetch<ApiResponse<ContractUserDto>>(
-                RestRequest.Post($"{baseUrl}/api/Users/CreateInContract", payload).WithApiKey(secret!), ct);
+                RestRequest.Post($"{baseUrl}/api/Users/CreateInContract", payload).WithTenantApiKey(tenantId, secret!), ct);
 
             if (!response.Ok || response.Data?.Data is null)
             {
@@ -102,7 +102,7 @@ namespace Archon.Infrastructure.IdentityManagement
 
         public async Task<ContractUserDto> UpdateUserRoleInContractAsync(long userId, long contractId, long roleId, CancellationToken ct = default)
         {
-            (string? baseUrl, string? secret) = await ResolveIntegrationAsync(ct);
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
             if (baseUrl is null)
             {
                 throw new InvalidOperationException("Integration 'identity-management' is not configured.");
@@ -110,7 +110,7 @@ namespace Archon.Infrastructure.IdentityManagement
 
             object body = new { ContractId = contractId, RoleId = roleId };
             RestResponse<ApiResponse<ContractUserDto>> response = await restApi.Fetch<ApiResponse<ContractUserDto>>(
-                RestRequest.Put($"{baseUrl}/api/Users/UpdateRoleInContract/{userId}", body).WithApiKey(secret!), ct);
+                RestRequest.Put($"{baseUrl}/api/Users/UpdateRoleInContract/{userId}", body).WithTenantApiKey(tenantId, secret!), ct);
 
             if (!response.Ok || response.Data?.Data is null)
             {
@@ -122,7 +122,7 @@ namespace Archon.Infrastructure.IdentityManagement
 
         public async Task SetUserActiveAsync(long userId, bool isActive, CancellationToken ct = default)
         {
-            (string? baseUrl, string? secret) = await ResolveIntegrationAsync(ct);
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
             if (baseUrl is null)
             {
                 throw new InvalidOperationException("Integration 'identity-management' is not configured.");
@@ -130,7 +130,7 @@ namespace Archon.Infrastructure.IdentityManagement
 
             object body = new { IsActive = isActive };
             RestResponse<ApiResponse<object>> response = await restApi.Fetch<ApiResponse<object>>(
-                RestRequest.Put($"{baseUrl}/api/Users/SetActive/{userId}", body).WithApiKey(secret!), ct);
+                RestRequest.Put($"{baseUrl}/api/Users/SetActive/{userId}", body).WithTenantApiKey(tenantId, secret!), ct);
 
             if (!response.Ok)
             {
@@ -140,14 +140,14 @@ namespace Archon.Infrastructure.IdentityManagement
 
         public async Task<List<ContractRoleDto>> GetRolesByContractAsync(long contractId, CancellationToken ct = default)
         {
-            (string? baseUrl, string? secret) = await ResolveIntegrationAsync(ct);
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
             if (baseUrl is null)
             {
                 throw new InvalidOperationException("Integration 'identity-management' is not configured.");
             }
 
             RestResponse<ApiResponse<List<ContractRoleDto>>> response = await restApi.Fetch<ApiResponse<List<ContractRoleDto>>>(
-                RestRequest.Get($"{baseUrl}/api/Roles/GetByContract/{contractId}").WithApiKey(secret!), ct);
+                RestRequest.Get($"{baseUrl}/api/Roles/GetByContract/{contractId}").WithTenantApiKey(tenantId, secret!), ct);
 
             if (!response.Ok)
             {
@@ -157,28 +157,29 @@ namespace Archon.Infrastructure.IdentityManagement
             return response.Data?.Data ?? [];
         }
 
-        private async Task<(string? baseUrl, string? secret)> ResolveIntegrationAsync(CancellationToken ct)
+        private async Task<(string? baseUrl, string? tenantId, string? apiKey)> ResolveIntegrationAsync(CancellationToken ct)
         {
             Integration? integration = await integrationService.GetByNameAsync(IntegrationName, ct);
             if (integration is null)
             {
                 Console.WriteLine("IdentityUsersClient: integration 'identity-management' was not found in table 'integrations'.");
-                return (null, null);
+                return (null, null, null);
             }
 
             if (string.IsNullOrWhiteSpace(integration.BaseUrl))
             {
                 Console.WriteLine("IdentityUsersClient: integration 'identity-management' is configured without baseurl.");
-                return (null, null);
+                return (null, null, null);
             }
 
+            string? tenantId = integration.GetParameter("TenantId");
             string? apiKey = integration.GetParameter("ApiKey") ?? integration.GetParameter("IntegrationSecret");
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 Console.WriteLine("IdentityUsersClient: integration 'identity-management' is configured without ApiKey.");
             }
 
-            return (integration.BaseUrl, apiKey);
+            return (integration.BaseUrl, tenantId, apiKey);
         }
     }
 

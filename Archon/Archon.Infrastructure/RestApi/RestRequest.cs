@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 
 namespace Archon.Infrastructure.RestApi
@@ -30,6 +31,16 @@ namespace Archon.Infrastructure.RestApi
 
         public RestRequest WithApiKey(string apiKey)
             => WithHeader("X-Api-Key", apiKey);
+
+        public RestRequest WithBasicAuth(string tenantId, string apiKey)
+        {
+            string credentials = $"{tenantId}:{apiKey}";
+            string encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(credentials));
+            return WithHeader("Authorization", $"Basic {encoded}");
+        }
+
+        public RestRequest WithTenantApiKey(string? tenantId, string apiKey)
+            => string.IsNullOrWhiteSpace(tenantId) ? WithApiKey(apiKey) : WithBasicAuth(tenantId, apiKey);
 
         [Obsolete("Use WithApiKey. Mantido apenas para compatibilidade durante a transicao.")]
         public RestRequest WithSecret(string secret)

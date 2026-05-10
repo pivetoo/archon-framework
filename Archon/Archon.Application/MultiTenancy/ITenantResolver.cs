@@ -4,6 +4,8 @@ namespace Archon.Application.MultiTenancy
     {
         Task<TenantInfo?> ResolveAsync(string? applicationId, CancellationToken cancellationToken = default);
 
+        Task<TenantInfo?> ResolveByTenantAndApiKeyAsync(string? tenantId, string? apiKey, CancellationToken cancellationToken = default);
+
         Task<TenantInfo?> ResolveByApiKeyAsync(string? apiKey, CancellationToken cancellationToken = default);
 
         [Obsolete("Use ResolveByApiKeyAsync. Mantido apenas para compatibilidade durante a transicao.")]

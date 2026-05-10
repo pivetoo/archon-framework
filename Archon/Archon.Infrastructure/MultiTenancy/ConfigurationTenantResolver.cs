@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using System.Text;
 using Archon.Application.MultiTenancy;
 using Archon.Core.ValueObjects;
 using Microsoft.Extensions.Caching.Memory;
@@ -83,6 +85,25 @@ namespace Archon.Infrastructure.MultiTenancy
             }
 
             return null;
+        }
+
+        public async Task<TenantInfo?> ResolveByTenantAndApiKeyAsync(string? tenantId, string? apiKey, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(tenantId) || string.IsNullOrWhiteSpace(apiKey))
+            {
+                return null;
+            }
+
+            TenantInfo? tenant = await ResolveAsync(tenantId, cancellationToken);
+            if (tenant is null || string.IsNullOrWhiteSpace(tenant.ApiKey))
+            {
+                return null;
+            }
+
+            byte[] expected = Encoding.UTF8.GetBytes(tenant.ApiKey);
+            byte[] received = Encoding.UTF8.GetBytes(apiKey);
+
+            return CryptographicOperations.FixedTimeEquals(expected, received) ? tenant : null;
         }
 
         public async Task<TenantInfo?> ResolveByApiKeyAsync(string? apiKey, CancellationToken cancellationToken = default)

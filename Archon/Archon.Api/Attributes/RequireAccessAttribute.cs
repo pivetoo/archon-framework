@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using System.Text;
 using Archon.Application.MultiTenancy;
 using Archon.Infrastructure.MultiTenancy;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -60,17 +62,9 @@ namespace Archon.Api.Attributes
                 return;
             }
 
-            string? providedApiKey = context.HttpContext.Request.Headers["X-Api-Key"].FirstOrDefault()
-                ?? context.HttpContext.Request.Headers["X-Integration-Secret"].FirstOrDefault();
-
-            if (string.IsNullOrWhiteSpace(providedApiKey))
-            {
-                context.Result = new UnauthorizedResult();
-                return;
-            }
-
             ITenantResolver tenantResolver = context.HttpContext.RequestServices.GetRequiredService<ITenantResolver>();
-            TenantInfo? tenant = tenantResolver.ResolveByApiKeyAsync(providedApiKey).GetAwaiter().GetResult();
+            TenantInfo? tenant = ResolveByBasicAuth(context.HttpContext.Request, tenantResolver)
+                ?? ResolveByApiKeyHeader(context.HttpContext.Request, tenantResolver);
 
             if (tenant is null)
             {
@@ -79,6 +73,61 @@ namespace Archon.Api.Attributes
             }
 
             SetTenantContext(context, tenant);
+        }
+
+        private static TenantInfo? ResolveByBasicAuth(HttpRequest request, ITenantResolver tenantResolver)
+        {
+            string? authorization = request.Headers.Authorization.FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(authorization))
+            {
+                return null;
+            }
+
+            const string prefix = "Basic ";
+            if (!authorization.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            string encoded = authorization[prefix.Length..].Trim();
+            if (string.IsNullOrWhiteSpace(encoded))
+            {
+                return null;
+            }
+
+            string credentials;
+            try
+            {
+                credentials = Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
+            }
+            catch (FormatException)
+            {
+                return null;
+            }
+
+            int separator = credentials.IndexOf(':');
+            if (separator <= 0 || separator == credentials.Length - 1)
+            {
+                return null;
+            }
+
+            string tenantId = credentials[..separator];
+            string apiKey = credentials[(separator + 1)..];
+
+            return tenantResolver.ResolveByTenantAndApiKeyAsync(tenantId, apiKey).GetAwaiter().GetResult();
+        }
+
+        private static TenantInfo? ResolveByApiKeyHeader(HttpRequest request, ITenantResolver tenantResolver)
+        {
+            string? providedApiKey = request.Headers["X-Api-Key"].FirstOrDefault()
+                ?? request.Headers["X-Integration-Secret"].FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(providedApiKey))
+            {
+                return null;
+            }
+
+            return tenantResolver.ResolveByApiKeyAsync(providedApiKey).GetAwaiter().GetResult();
         }
 
         private static void SetTenantContext(AuthorizationFilterContext context, TenantInfo tenant)

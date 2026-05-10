@@ -93,7 +93,7 @@ namespace Archon.Infrastructure.IdentityManagement
         {
             ArgumentNullException.ThrowIfNull(resources);
 
-            (string? baseUrl, string? secret) = await ResolveIntegrationAsync(ct);
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
             if (baseUrl is null)
             {
                 throw new InvalidOperationException("Integration 'identity-management' is not configured.");
@@ -101,7 +101,7 @@ namespace Archon.Infrastructure.IdentityManagement
 
             RestResponse<object> response = await restApi.Fetch<object>(
                 RestRequest.Post($"{baseUrl}/api/AccessResources/Sync", resources)
-                           .WithApiKey(secret!), ct);
+                           .WithTenantApiKey(tenantId, secret!), ct);
 
             if (!response.Ok)
             {
@@ -127,28 +127,29 @@ namespace Archon.Infrastructure.IdentityManagement
             return integration.BaseUrl;
         }
 
-        private async Task<(string? baseUrl, string? secret)> ResolveIntegrationAsync(CancellationToken ct)
+        private async Task<(string? baseUrl, string? tenantId, string? apiKey)> ResolveIntegrationAsync(CancellationToken ct)
         {
             Integration? integration = await integrationService.GetByNameAsync(IntegrationName, ct);
             if (integration is null)
             {
                 Console.WriteLine("IdentityManagementClient: integration 'identity-management' was not found in table 'integrations'.");
-                return (null, null);
+                return (null, null, null);
             }
 
             if (string.IsNullOrWhiteSpace(integration.BaseUrl))
             {
                 Console.WriteLine("IdentityManagementClient: integration 'identity-management' is configured without baseurl.");
-                return (null, null);
+                return (null, null, null);
             }
 
+            string? tenantId = integration.GetParameter("TenantId");
             string? apiKey = integration.GetParameter("ApiKey") ?? integration.GetParameter("IntegrationSecret");
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 Console.WriteLine("IdentityManagementClient: integration 'identity-management' is configured without ApiKey.");
             }
 
-            return (integration.BaseUrl, apiKey);
+            return (integration.BaseUrl, tenantId, apiKey);
         }
     }
 }
