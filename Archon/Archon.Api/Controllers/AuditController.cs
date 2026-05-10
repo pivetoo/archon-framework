@@ -1,6 +1,7 @@
 using Archon.Api.Attributes;
 using Archon.Application.Services;
 using Archon.Core.Pagination;
+using Archon.Core.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Archon.Api.Controllers
@@ -43,6 +44,32 @@ namespace Archon.Api.Controllers
 
             var result = await auditService.GetById(auditEntryId, cancellationToken);
             return result is null ? Http404(Localizer["record.auditEntry.notFound"]) : Http200(result);
+        }
+
+        [RequireAccess("Permite listar os registros recentes de auditoria com filtros.")]
+        [GetEndpoint("[action]")]
+        public async Task<IActionResult> Recent(
+            [FromQuery] string? entityName,
+            [FromQuery] AuditAction? action,
+            [FromQuery] string? changedBy,
+            [FromQuery] DateTimeOffset? from,
+            [FromQuery] DateTimeOffset? to,
+            [FromQuery] PagedRequest request,
+            CancellationToken cancellationToken)
+        {
+            var result = await auditService.Search(entityName, action, changedBy, from, to, request, cancellationToken);
+            return Http200(result);
+        }
+
+        [RequireAccess("Permite consultar estatisticas agregadas dos registros de auditoria.")]
+        [GetEndpoint("[action]")]
+        public async Task<IActionResult> Stats(
+            [FromQuery] DateTimeOffset? from,
+            [FromQuery] DateTimeOffset? to,
+            CancellationToken cancellationToken)
+        {
+            var result = await auditService.GetStats(from, to, cancellationToken);
+            return Http200(result);
         }
     }
 }

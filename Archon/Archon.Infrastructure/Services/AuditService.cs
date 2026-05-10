@@ -2,6 +2,7 @@ using Archon.Application.Services;
 using Archon.Core.Auditing;
 using Archon.Core.Entities;
 using Archon.Core.Pagination;
+using Archon.Core.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
 namespace Archon.Infrastructure.Services
@@ -40,6 +41,115 @@ namespace Archon.Infrastructure.Services
 
             Dictionary<long, IReadOnlyCollection<AuditPropertyChangeModel>> propertyChangesByAuditEntryId = await LoadPropertyChangesAsync([entry.Id], cancellationToken);
             return ToModel(entry, propertyChangesByAuditEntryId);
+        }
+
+        public Task<PagedResult<AuditEntryModel>> Search(
+            string? entityName,
+            AuditAction? action,
+            string? changedBy,
+            DateTimeOffset? from,
+            DateTimeOffset? to,
+            PagedRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            IQueryable<AuditEntry> query = ApplyFilters(dbContext.Set<AuditEntry>().AsNoTracking(), entityName, action, changedBy, from, to)
+                .OrderByDescending(entry => entry.ChangedAt);
+
+            return ToPagedAuditResultAsync(query, request, includePropertyChanges: false, cancellationToken);
+        }
+
+        public async Task<AuditStatsModel> GetStats(
+            DateTimeOffset? from,
+            DateTimeOffset? to,
+            CancellationToken cancellationToken = default)
+        {
+            IQueryable<AuditEntry> query = ApplyFilters(dbContext.Set<AuditEntry>().AsNoTracking(), entityName: null, action: null, changedBy: null, from, to);
+
+            long totalEntries = await query.LongCountAsync(cancellationToken);
+
+            var volumeRaw = await query
+                .GroupBy(entry => new { entry.ChangedAt.Year, entry.ChangedAt.Month, entry.ChangedAt.Day })
+                .Select(group => new { group.Key.Year, group.Key.Month, group.Key.Day, Count = group.LongCount() })
+                .ToListAsync(cancellationToken);
+
+            List<AuditVolumePoint> volumeByDay = volumeRaw
+                .Select(item => new AuditVolumePoint
+                {
+                    Date = new DateOnly(item.Year, item.Month, item.Day),
+                    Count = item.Count,
+                })
+                .OrderBy(point => point.Date)
+                .ToList();
+
+            List<AuditCountByName> topUsers = await query
+                .Where(entry => entry.ChangedBy != null && entry.ChangedBy != string.Empty)
+                .GroupBy(entry => entry.ChangedBy!)
+                .Select(group => new AuditCountByName { Name = group.Key, Count = group.LongCount() })
+                .OrderByDescending(item => item.Count)
+                .Take(10)
+                .ToListAsync(cancellationToken);
+
+            List<AuditCountByName> topEntities = await query
+                .GroupBy(entry => entry.EntityName)
+                .Select(group => new AuditCountByName { Name = group.Key, Count = group.LongCount() })
+                .OrderByDescending(item => item.Count)
+                .Take(10)
+                .ToListAsync(cancellationToken);
+
+            List<AuditActionCount> actionDistribution = await query
+                .GroupBy(entry => entry.Action)
+                .Select(group => new AuditActionCount { Action = group.Key, Count = group.LongCount() })
+                .ToListAsync(cancellationToken);
+
+            return new AuditStatsModel
+            {
+                TotalEntries = totalEntries,
+                VolumeByDay = volumeByDay,
+                TopUsers = topUsers,
+                TopEntities = topEntities,
+                ActionDistribution = actionDistribution,
+            };
+        }
+
+        private static IQueryable<AuditEntry> ApplyFilters(
+            IQueryable<AuditEntry> query,
+            string? entityName,
+            AuditAction? action,
+            string? changedBy,
+            DateTimeOffset? from,
+            DateTimeOffset? to)
+        {
+            if (!string.IsNullOrWhiteSpace(entityName))
+            {
+                string normalized = entityName.Trim();
+                query = query.Where(entry => entry.EntityName == normalized);
+            }
+
+            if (action.HasValue)
+            {
+                AuditAction value = action.Value;
+                query = query.Where(entry => entry.Action == value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(changedBy))
+            {
+                string normalized = changedBy.Trim();
+                query = query.Where(entry => entry.ChangedBy != null && entry.ChangedBy == normalized);
+            }
+
+            if (from.HasValue)
+            {
+                DateTimeOffset value = from.Value;
+                query = query.Where(entry => entry.ChangedAt >= value);
+            }
+
+            if (to.HasValue)
+            {
+                DateTimeOffset value = to.Value;
+                query = query.Where(entry => entry.ChangedAt <= value);
+            }
+
+            return query;
         }
 
         private async Task<PagedResult<AuditEntryModel>> ToPagedAuditResultAsync(IQueryable<AuditEntry> query, PagedRequest request, bool includePropertyChanges, CancellationToken cancellationToken)
