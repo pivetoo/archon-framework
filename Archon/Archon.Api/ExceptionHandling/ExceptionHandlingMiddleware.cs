@@ -32,6 +32,32 @@ namespace Archon.Api.ExceptionHandling
             {
                 await next(context);
             }
+            // ============ Exceptions tipadas (preferenciais) ============
+            catch (NotFoundException exception)
+            {
+                logger.LogInformation("404 Not Found {Method} {Path} traceId={TraceId} key={Key}",
+                    context.Request.Method, context.Request.Path, traceId, exception.Message);
+                await WriteErrorAsync(context, StatusCodes.Status404NotFound, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message, exception.MessageArgs));
+            }
+            catch (ConflictException exception)
+            {
+                logger.LogWarning("409 Conflict {Method} {Path} traceId={TraceId} key={Key}",
+                    context.Request.Method, context.Request.Path, traceId, exception.Message);
+                await WriteErrorAsync(context, StatusCodes.Status409Conflict, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message, exception.MessageArgs));
+            }
+            catch (ForbiddenException exception)
+            {
+                logger.LogWarning("403 Forbidden {Method} {Path} traceId={TraceId} key={Key}",
+                    context.Request.Method, context.Request.Path, traceId, exception.Message);
+                await WriteErrorAsync(context, StatusCodes.Status403Forbidden, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message, exception.MessageArgs));
+            }
+            catch (BusinessRuleException exception)
+            {
+                logger.LogInformation("400 Business Rule {Method} {Path} traceId={TraceId} key={Key}",
+                    context.Request.Method, context.Request.Path, traceId, exception.Message);
+                await WriteErrorAsync(context, StatusCodes.Status400BadRequest, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message, exception.MessageArgs));
+            }
+            // ============ Exceptions legadas (compatibilidade) ============
             catch (UnauthorizedAccessException exception)
             {
                 logger.LogWarning(exception, "401 Unauthorized {Method} {Path} traceId={TraceId} message={Message}",
@@ -115,18 +141,23 @@ namespace Archon.Api.ExceptionHandling
             IStringLocalizer<ArchonApiResource> archonLocalizer,
             IStringLocalizerFactory factory,
             LocalizationCatalogOptions catalog,
-            string message)
+            string message,
+            object[]? args = null)
         {
             if (string.IsNullOrWhiteSpace(message))
             {
                 return archonLocalizer["error.unexpected.short"];
             }
 
+            object[] formatArgs = args ?? [];
+
             // Tenta primeiro nos resources da aplicacao consumidora (mais especificos)
             foreach (Type resourceType in catalog.ResourceTypes)
             {
                 IStringLocalizer appLocalizer = factory.Create(resourceType);
-                LocalizedString localized = appLocalizer[message];
+                LocalizedString localized = formatArgs.Length > 0
+                    ? appLocalizer[message, formatArgs]
+                    : appLocalizer[message];
                 if (!localized.ResourceNotFound)
                 {
                     return localized.Value;
@@ -134,7 +165,9 @@ namespace Archon.Api.ExceptionHandling
             }
 
             // Cai no resource do Archon
-            LocalizedString archon = archonLocalizer[message];
+            LocalizedString archon = formatArgs.Length > 0
+                ? archonLocalizer[message, formatArgs]
+                : archonLocalizer[message];
             return archon.ResourceNotFound ? message : archon.Value;
         }
 
