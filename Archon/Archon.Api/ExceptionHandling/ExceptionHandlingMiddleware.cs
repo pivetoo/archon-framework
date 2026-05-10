@@ -26,39 +26,52 @@ namespace Archon.Api.ExceptionHandling
             LocalizationCatalogOptions catalog = context.RequestServices.GetRequiredService<IOptions<LocalizationCatalogOptions>>().Value;
             IStringLocalizerFactory localizerFactory = context.RequestServices.GetRequiredService<IStringLocalizerFactory>();
 
+            string traceId = Activity.Current?.TraceId.ToString() ?? string.Empty;
+
             try
             {
                 await next(context);
             }
             catch (UnauthorizedAccessException exception)
             {
-                logger.LogWarning(exception, "Unauthorized access attempt at {Path}", context.Request.Path);
+                logger.LogWarning(exception, "401 Unauthorized {Method} {Path} traceId={TraceId} message={Message}",
+                    context.Request.Method, context.Request.Path, traceId, exception.Message);
                 await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
             }
             catch (KeyNotFoundException exception)
             {
+                logger.LogInformation("404 Not Found {Method} {Path} traceId={TraceId} message={Message}",
+                    context.Request.Method, context.Request.Path, traceId, exception.Message);
                 await WriteErrorAsync(context, StatusCodes.Status404NotFound, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
             }
             catch (InvalidOperationException exception) when (IsClientError(exception.Message))
             {
+                logger.LogInformation("400 Bad Request {Method} {Path} traceId={TraceId} message={Message}",
+                    context.Request.Method, context.Request.Path, traceId, exception.Message);
                 await WriteErrorAsync(context, StatusCodes.Status400BadRequest, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
             }
             catch (InvalidOperationException exception)
             {
-                logger.LogError(exception, "Internal invalid operation at {Path}", context.Request.Path);
+                logger.LogError(exception, "500 Internal Server Error {Method} {Path} traceId={TraceId}",
+                    context.Request.Method, context.Request.Path, traceId);
                 await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, archonLocalizer["error.unexpected"]);
             }
             catch (ArgumentException exception)
             {
+                logger.LogWarning(exception, "400 Bad Request (ArgumentException) {Method} {Path} traceId={TraceId} message={Message}",
+                    context.Request.Method, context.Request.Path, traceId, exception.Message);
                 await WriteErrorAsync(context, StatusCodes.Status400BadRequest, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
             }
             catch (IntegrityException exception)
             {
+                logger.LogWarning(exception, "409 Conflict {Method} {Path} traceId={TraceId} message={Message}",
+                    context.Request.Method, context.Request.Path, traceId, exception.Message);
                 await WriteErrorAsync(context, StatusCodes.Status409Conflict, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
             }
             catch (Exception exception)
             {
-                logger.LogError(exception, "Unexpected error at {Path}: {Message}", context.Request.Path, exception.Message);
+                logger.LogError(exception, "500 Internal Server Error {Method} {Path} traceId={TraceId}",
+                    context.Request.Method, context.Request.Path, traceId);
                 await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, archonLocalizer["error.unexpected"]);
             }
         }
