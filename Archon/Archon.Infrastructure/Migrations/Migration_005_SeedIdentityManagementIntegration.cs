@@ -9,13 +9,13 @@ namespace Archon.Infrastructure.Migrations
         {
             Execute.Sql(@"
                 INSERT INTO integrations (name, baseurl, isactive, createdat, updatedat)
-                SELECT 'identity-management', '', true, NOW(), NOW()
+                SELECT 'identity-management', 'https://auth.mainstay.com.br', true, NOW(), NOW()
                 WHERE NOT EXISTS (
                     SELECT 1 FROM integrations WHERE name = 'identity-management'
                 );
 
                 INSERT INTO integrationparameters (integrationid, key, value, issecret, isactive, createdat, updatedat)
-                SELECT i.id, 'ApiKey', '', true, true, NOW(), NOW()
+                SELECT i.id, 'ApiKey', '623f90c4-51d3-4b8a-b612-2e3f15b7a9b7', true, true, NOW(), NOW()
                 FROM integrations i
                 WHERE i.name = 'identity-management'
                 AND NOT EXISTS (
