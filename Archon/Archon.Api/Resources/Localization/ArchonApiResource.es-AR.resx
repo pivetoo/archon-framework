@@ -87,6 +87,9 @@
   <data name="nav.about" xml:space="preserve">
     <value>Acerca de</value>
   </data>
+  <data name="nav.profile" xml:space="preserve">
+    <value>Mi perfil</value>
+  </data>
   <data name="nav.language" xml:space="preserve">
     <value>Idioma</value>
   </data>
