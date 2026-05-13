@@ -20,13 +20,7 @@ namespace Archon.Api.Security.Authentication
         {
             try
             {
-                string? authorizationHeader = Request.Headers.Authorization.FirstOrDefault();
-                if (string.IsNullOrWhiteSpace(authorizationHeader) || !authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-                {
-                    return AuthenticateResult.NoResult();
-                }
-
-                string token = authorizationHeader["Bearer ".Length..].Trim();
+                string? token = ExtractToken();
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     return AuthenticateResult.NoResult();
@@ -52,6 +46,32 @@ namespace Archon.Api.Security.Authentication
                 IStringLocalizer<ArchonApiResource> localizer = Context.RequestServices.GetRequiredService<IStringLocalizer<ArchonApiResource>>();
                 return AuthenticateResult.Fail(localizer["auth.token.validationFailed"]);
             }
+        }
+
+        // Suporte nativo a SignalR: WebSocket não permite headers customizados no handshake,
+        // então o client envia o token via query string para conexões em /hubs.
+        private string? ExtractToken()
+        {
+            string? authorizationHeader = Request.Headers.Authorization.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(authorizationHeader) && authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                string headerToken = authorizationHeader["Bearer ".Length..].Trim();
+                if (!string.IsNullOrWhiteSpace(headerToken))
+                {
+                    return headerToken;
+                }
+            }
+
+            if (Request.Path.StartsWithSegments("/hubs"))
+            {
+                string? queryToken = Request.Query["access_token"];
+                if (!string.IsNullOrWhiteSpace(queryToken))
+                {
+                    return queryToken;
+                }
+            }
+
+            return null;
         }
     }
 }
