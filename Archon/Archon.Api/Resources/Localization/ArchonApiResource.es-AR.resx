@@ -141,6 +141,9 @@
   <data name="common.validation.moreErrors" xml:space="preserve">
     <value>Y {0} error(es) más.</value>
   </data>
+  <data name="common.table.rowsPerPage" xml:space="preserve">
+    <value>Filas por página</value>
+  </data>
   <data name="confirmModal.title" xml:space="preserve">
     <value>Confirmar acción</value>
   </data>

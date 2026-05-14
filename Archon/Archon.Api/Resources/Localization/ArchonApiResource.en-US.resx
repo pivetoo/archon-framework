@@ -246,6 +246,9 @@
   <data name="common.validation.moreErrors" xml:space="preserve">
     <value>And {0} more error(s).</value>
   </data>
+  <data name="common.table.rowsPerPage" xml:space="preserve">
+    <value>Rows per page</value>
+  </data>
   <data name="confirmModal.title" xml:space="preserve">
     <value>Confirm action</value>
   </data>
