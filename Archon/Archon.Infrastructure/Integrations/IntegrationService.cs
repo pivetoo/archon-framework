@@ -5,7 +5,6 @@ using Archon.Core.ValueObjects;
 using Archon.Infrastructure.MultiTenancy;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
 using Npgsql;
@@ -19,15 +18,13 @@ namespace Archon.Infrastructure.Integrations
         private readonly IMemoryCache cache;
         private readonly IntegrationOptions options;
         private readonly TenantDatabaseOptions tenantDatabaseOptions;
-        private readonly IConfiguration configuration;
 
-        public IntegrationService(ITenantContext tenantContext, IMemoryCache cache, IOptions<IntegrationOptions> options, TenantDatabaseOptions tenantDatabaseOptions, IConfiguration configuration)
+        public IntegrationService(ITenantContext tenantContext, IMemoryCache cache, IOptions<IntegrationOptions> options, TenantDatabaseOptions tenantDatabaseOptions)
         {
             this.tenantContext = tenantContext;
             this.cache = cache;
             this.options = options.Value;
             this.tenantDatabaseOptions = tenantDatabaseOptions;
-            this.configuration = configuration;
         }
 
         public async Task<Integration?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
@@ -151,55 +148,7 @@ namespace Archon.Infrastructure.Integrations
                     fallbackTenant.Value.Schema);
             }
 
-            return TryResolveFromCatalog();
-        }
-
-        private (string connectionString, DatabaseProvider databaseProvider, string? schema) TryResolveFromCatalog()
-        {
-            string? catalogConn = configuration["TenantCatalog:ConnectionString"];
-            string? applicationId = configuration["TenantCatalog:ApplicationId"];
-
-            if (string.IsNullOrWhiteSpace(catalogConn) || string.IsNullOrWhiteSpace(applicationId))
-            {
-                return (string.Empty, DatabaseProvider.PostgreSql, null);
-            }
-
-            try
-            {
-                using NpgsqlConnection conn = new(catalogConn);
-                conn.Open();
-
-                using NpgsqlCommand cmd = conn.CreateCommand();
-                cmd.CommandText =
-                    """
-                    SELECT connectionstring, databasetype, coalesce("schema", 'public')
-                    FROM public.tenantdatabases
-                    WHERE applicationid = @appid AND isactive = true
-                    LIMIT 1
-                    """;
-                cmd.Parameters.AddWithValue("appid", NpgsqlTypes.NpgsqlDbType.Text, applicationId);
-
-                using NpgsqlDataReader reader = cmd.ExecuteReader();
-                if (reader.Read())
-                {
-                    string connStr = reader.GetString(0);
-                    string dbType = reader.GetString(1);
-                    string schema = reader.GetString(2);
-
-                    DatabaseProvider provider = dbType.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase)
-                        ? DatabaseProvider.PostgreSql
-                        : DatabaseProvider.SqlServer;
-
-                    return (connStr, provider, schema);
-                }
-
-                return (string.Empty, DatabaseProvider.PostgreSql, null);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to resolve tenant from TenantCatalog: {ex.Message}");
-                return (string.Empty, DatabaseProvider.PostgreSql, null);
-            }
+            return (string.Empty, DatabaseProvider.PostgreSql, null);
         }
 
         private static DbConnection CreateConnection(string connectionString, DatabaseProvider databaseProvider)

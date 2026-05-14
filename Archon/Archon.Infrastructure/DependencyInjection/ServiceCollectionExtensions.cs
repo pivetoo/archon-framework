@@ -14,7 +14,6 @@ using Archon.Infrastructure.Persistence.EF;
 using Archon.Infrastructure.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
-using Npgsql;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -30,11 +29,24 @@ namespace Archon.Infrastructure.DependencyInjection
         public static IServiceCollection AddArchonMultiTenancy(this IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<TenantDatabaseOptions>(configuration);
-            services.Configure<TenantCatalogOptions>(configuration.GetSection("TenantCatalog"));
+            services.Configure<IdentityCatalogOptions>(configuration.GetSection("IdentityCatalog"));
             services.AddMemoryCache();
             services.AddScoped<MultiTenantContext>();
             services.AddScoped<ITenantContext>(provider => provider.GetRequiredService<MultiTenantContext>());
-            services.AddSingleton<ITenantResolver, ConfigurationTenantResolver>();
+            services.AddSingleton<ConfigurationTenantResolver>();
+
+            IdentityCatalogOptions identityCatalogOptions = new IdentityCatalogOptions();
+            configuration.GetSection("IdentityCatalog").Bind(identityCatalogOptions);
+
+            if (identityCatalogOptions.IsConfigured)
+            {
+                services.AddHttpClient<IdentityCatalogClient>();
+                services.AddSingleton<ITenantResolver, IdentityCatalogTenantResolver>();
+            }
+            else
+            {
+                services.AddSingleton<ITenantResolver>(provider => provider.GetRequiredService<ConfigurationTenantResolver>());
+            }
 
             return services;
         }
@@ -218,65 +230,10 @@ namespace Archon.Infrastructure.DependencyInjection
         {
             TenantDatabaseOptions tenantDatabaseOptions = BindTenantDatabaseOptions(configuration);
 
-            List<(string name, string connectionString, DatabaseProvider databaseProvider)> connections = tenantDatabaseOptions.TenantDatabases
+            return tenantDatabaseOptions.TenantDatabases
                 .Select(item => (item.Key, item.Value.ConnectionString, item.Value.GetDatabaseProvider()))
                 .Where(item => !string.IsNullOrWhiteSpace(item.ConnectionString))
                 .ToList();
-
-            if (connections.Count > 0)
-            {
-                return connections;
-            }
-
-            return TryGetCatalogConnections(configuration);
-        }
-
-        private static List<(string name, string connectionString, DatabaseProvider databaseProvider)> TryGetCatalogConnections(IConfiguration configuration)
-        {
-            string? catalogConnectionString = configuration["TenantCatalog:ConnectionString"];
-            string? applicationId = configuration["TenantCatalog:ApplicationId"];
-
-            if (string.IsNullOrWhiteSpace(catalogConnectionString) || string.IsNullOrWhiteSpace(applicationId))
-            {
-                return [];
-            }
-
-            try
-            {
-                using NpgsqlConnection conn = new(catalogConnectionString);
-                conn.Open();
-
-                using NpgsqlCommand cmd = conn.CreateCommand();
-                cmd.CommandText =
-                    """
-                    SELECT connectionstring, databasetype, coalesce("schema", 'public')
-                    FROM public.tenantdatabases
-                    WHERE applicationid = @appid AND isactive = true
-                    """;
-                cmd.Parameters.AddWithValue("appid", NpgsqlTypes.NpgsqlDbType.Text, applicationId);
-
-                List<(string, string, DatabaseProvider)> catalogConnections = [];
-                using NpgsqlDataReader reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    string connStr = reader.GetString(0);
-                    string dbType = reader.GetString(1);
-                    string schema = reader.GetString(2);
-
-                    DatabaseProvider provider = dbType.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase)
-                        ? DatabaseProvider.PostgreSql
-                        : DatabaseProvider.SqlServer;
-
-                    catalogConnections.Add(($"catalog-{schema}", connStr, provider));
-                }
-
-                return catalogConnections;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to load migration connections from TenantCatalog: {ex.Message}");
-                return [];
-            }
         }
 
         private static (string connectionString, DatabaseProvider databaseProvider, string? schema) ResolveCurrentTenant(ITenantContext tenantContext, TenantDatabaseOptions tenantDatabaseOptions)

@@ -2,13 +2,9 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using Archon.Application.MultiTenancy;
-using Archon.Core.ValueObjects;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
-using Npgsql;
-using NpgsqlTypes;
-using System.Data.Common;
 
 namespace Archon.Infrastructure.MultiTenancy
 {
@@ -16,17 +12,19 @@ namespace Archon.Infrastructure.MultiTenancy
     {
         private readonly IConfiguration configuration;
         private readonly IMemoryCache cache;
-        private readonly TenantCatalogOptions tenantCatalogOptions;
+        private readonly TimeSpan cacheTtl;
         private readonly string currentApplicationId;
         private readonly ConcurrentDictionary<string, SemaphoreSlim> locks = new(StringComparer.OrdinalIgnoreCase);
 
-        public ConfigurationTenantResolver(IConfiguration configuration, IMemoryCache cache, IOptions<TenantCatalogOptions> tenantCatalogOptions)
+        public ConfigurationTenantResolver(IConfiguration configuration, IMemoryCache cache, IOptions<IdentityCatalogOptions> identityCatalogOptions)
         {
             this.configuration = configuration;
             this.cache = cache;
-            this.tenantCatalogOptions = tenantCatalogOptions.Value;
-            currentApplicationId = !string.IsNullOrWhiteSpace(this.tenantCatalogOptions.ApplicationId)
-                ? this.tenantCatalogOptions.ApplicationId
+
+            IdentityCatalogOptions options = identityCatalogOptions.Value;
+            cacheTtl = options.CacheTtl;
+            currentApplicationId = !string.IsNullOrWhiteSpace(options.ApplicationId)
+                ? options.ApplicationId
                 : configuration["Jwt:Audience"] ?? string.Empty;
         }
 
@@ -50,12 +48,11 @@ namespace Archon.Infrastructure.MultiTenancy
                     return cachedTenant;
                 }
 
-                TenantInfo? tenant = await ResolveFromCatalogAsync(tenantId, cancellationToken)
-                    ?? ResolveFromConfiguration(tenantId);
+                TenantInfo? tenant = ResolveFromConfiguration(tenantId);
 
                 if (tenant is not null)
                 {
-                    cache.Set(cacheKey, tenant, tenantCatalogOptions.CacheTtl);
+                    cache.Set(cacheKey, tenant, cacheTtl);
                 }
 
                 return tenant;
@@ -64,27 +61,6 @@ namespace Archon.Infrastructure.MultiTenancy
             {
                 syncLock.Release();
             }
-        }
-
-        private TenantInfo? ResolveFromConfiguration(string? tenantId)
-        {
-            if (string.IsNullOrWhiteSpace(tenantId))
-            {
-                return null;
-            }
-
-            IConfigurationSection tenantDatabasesSection = configuration.GetSection("TenantDatabases");
-            string normalizedTenantId = tenantId.Trim();
-
-            foreach (IConfigurationSection tenantSection in tenantDatabasesSection.GetChildren())
-            {
-                if (string.Equals(tenantSection.Key, normalizedTenantId, StringComparison.OrdinalIgnoreCase))
-                {
-                    return CreateTenantInfo(tenantSection);
-                }
-            }
-
-            return null;
         }
 
         public async Task<TenantInfo?> ResolveByTenantAndApiKeyAsync(string? tenantId, string? apiKey, CancellationToken cancellationToken = default)
@@ -106,31 +82,53 @@ namespace Archon.Infrastructure.MultiTenancy
             return CryptographicOperations.FixedTimeEquals(expected, received) ? tenant : null;
         }
 
-        public async Task<TenantInfo?> ResolveByApiKeyAsync(string? apiKey, CancellationToken cancellationToken = default)
+        public Task<TenantInfo?> ResolveByApiKeyAsync(string? apiKey, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(apiKey))
             {
-                return null;
+                return Task.FromResult<TenantInfo?>(null);
             }
 
-            string cacheKey = $"tenant:apikey:{currentApplicationId}:{apiKey.Trim()}";
+            string normalizedApiKey = apiKey.Trim();
+            string cacheKey = $"tenant:apikey:{currentApplicationId}:{normalizedApiKey}";
+
             if (cache.TryGetValue(cacheKey, out TenantInfo? cachedTenant))
             {
-                return cachedTenant;
-            }
-
-            TenantInfo? tenant = await ResolveByApiKeyFromCatalogAsync(apiKey, cancellationToken);
-            if (tenant is not null)
-            {
-                cache.Set(cacheKey, tenant, tenantCatalogOptions.CacheTtl);
-                return tenant;
+                return Task.FromResult(cachedTenant);
             }
 
             IConfigurationSection tenantDatabasesSection = configuration.GetSection("TenantDatabases");
             foreach (IConfigurationSection tenantSection in tenantDatabasesSection.GetChildren())
             {
                 string? configuredApiKey = tenantSection["ApiKey"] ?? tenantSection["IntegrationSecret"];
-                if (string.Equals(configuredApiKey, apiKey, StringComparison.Ordinal))
+                if (string.Equals(configuredApiKey, normalizedApiKey, StringComparison.Ordinal))
+                {
+                    TenantInfo? tenant = CreateTenantInfo(tenantSection);
+                    if (tenant is not null)
+                    {
+                        cache.Set(cacheKey, tenant, cacheTtl);
+                    }
+
+                    return Task.FromResult(tenant);
+                }
+            }
+
+            return Task.FromResult<TenantInfo?>(null);
+        }
+
+        private TenantInfo? ResolveFromConfiguration(string? tenantId)
+        {
+            if (string.IsNullOrWhiteSpace(tenantId))
+            {
+                return null;
+            }
+
+            IConfigurationSection tenantDatabasesSection = configuration.GetSection("TenantDatabases");
+            string normalizedTenantId = tenantId.Trim();
+
+            foreach (IConfigurationSection tenantSection in tenantDatabasesSection.GetChildren())
+            {
+                if (string.Equals(tenantSection.Key, normalizedTenantId, StringComparison.OrdinalIgnoreCase))
                 {
                     return CreateTenantInfo(tenantSection);
                 }
@@ -164,143 +162,6 @@ namespace Archon.Infrastructure.MultiTenancy
                 Schema = string.IsNullOrWhiteSpace(option.Schema) ? "public" : option.Schema,
                 DatabaseProvider = option.GetDatabaseProvider(),
                 ApiKey = apiKey
-            };
-        }
-
-        private async Task<TenantInfo?> ResolveFromCatalogAsync(string? tenantId, CancellationToken cancellationToken)
-        {
-            if (!tenantCatalogOptions.IsConfigured)
-            {
-                return null;
-            }
-
-            await using DbConnection connection = CreateCatalogConnection();
-            await connection.OpenAsync(cancellationToken);
-
-            List<CatalogTenantRecord> records = await LoadTenantRecordsAsync(connection, null, cancellationToken);
-
-            CatalogTenantRecord? record = string.IsNullOrWhiteSpace(tenantId)
-                ? records
-                    .OrderByDescending(item => item.IsDefault)
-                    .ThenBy(item => item.TenantId, StringComparer.OrdinalIgnoreCase)
-                    .FirstOrDefault()
-                : records.FirstOrDefault(item => string.Equals(item.TenantId, tenantId.Trim(), StringComparison.OrdinalIgnoreCase));
-
-            return record is null ? null : CreateTenantInfo(record);
-        }
-
-        private async Task<TenantInfo?> ResolveByApiKeyFromCatalogAsync(string apiKey, CancellationToken cancellationToken)
-        {
-            if (!tenantCatalogOptions.IsConfigured)
-            {
-                return null;
-            }
-
-            await using DbConnection connection = CreateCatalogConnection();
-            await connection.OpenAsync(cancellationToken);
-
-            List<CatalogTenantRecord> records = await LoadTenantRecordsAsync(connection, apiKey.Trim(), cancellationToken);
-            CatalogTenantRecord? record = records.FirstOrDefault();
-
-            return record is null ? null : CreateTenantInfo(record);
-        }
-
-        private TenantInfo? CreateTenantInfo(CatalogTenantRecord record)
-        {
-            if (string.IsNullOrWhiteSpace(record.ConnectionString))
-            {
-                return null;
-            }
-
-            return new TenantInfo
-            {
-                TenantId = record.TenantId,
-                CompanyName = record.CompanyName,
-                ApplicationId = record.ApplicationId,
-                ConnectionString = record.ConnectionString,
-                Schema = string.IsNullOrWhiteSpace(record.Schema) ? "public" : record.Schema,
-                DatabaseProvider = ResolveDatabaseProvider(record.DatabaseType),
-                ApiKey = record.ApiKey
-            };
-        }
-
-        private DbConnection CreateCatalogConnection()
-        {
-            return new NpgsqlConnection(tenantCatalogOptions.ConnectionString);
-        }
-
-        private async Task<List<CatalogTenantRecord>> LoadTenantRecordsAsync(DbConnection connection, string? apiKey, CancellationToken cancellationToken)
-        {
-            await using DbCommand command = connection.CreateCommand();
-            command.CommandText =
-                $"""
-                select
-                    tenantid,
-                    companyname,
-                    applicationid,
-                    connectionstring,
-                    databasetype,
-                    schema,
-                    integrationsecret,
-                    coalesce(isdefault, false) as isdefault
-                from {GetTenantDatabasesTableName()}
-                where isactive = @isactive
-                  and (@applicationid = '' or applicationid = @applicationid)
-                  and (@apikey is null or integrationsecret = @apikey)
-                """;
-
-            AddParameter(command, "@isactive", true);
-            AddParameter(command, "@applicationid", currentApplicationId);
-            AddParameter(command, "@apikey", apiKey);
-
-            List<CatalogTenantRecord> records = new();
-            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
-
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                records.Add(new CatalogTenantRecord
-                {
-                    TenantId = reader.GetString(0),
-                    CompanyName = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
-                    ApplicationId = reader.GetString(2),
-                    ConnectionString = reader.GetString(3),
-                    DatabaseType = reader.GetString(4),
-                    Schema = reader.IsDBNull(5) ? null : reader.GetString(5),
-                    ApiKey = reader.IsDBNull(6) ? null : reader.GetString(6),
-                    IsDefault = reader.GetBoolean(7)
-                });
-            }
-
-            return records;
-        }
-
-        private static void AddParameter(DbCommand command, string name, object? value)
-        {
-            DbParameter parameter = command.CreateParameter();
-            parameter.ParameterName = name;
-            parameter.Value = value ?? DBNull.Value;
-
-            if (value is null && parameter is NpgsqlParameter npgsqlParameter)
-            {
-                npgsqlParameter.NpgsqlDbType = NpgsqlDbType.Text;
-            }
-
-            command.Parameters.Add(parameter);
-        }
-
-        private string GetTenantDatabasesTableName()
-        {
-            return "public.tenantdatabases";
-        }
-
-        private static DatabaseProvider ResolveDatabaseProvider(string databaseType)
-        {
-            return databaseType.Trim().ToLowerInvariant() switch
-            {
-                "postgresql" or "postgres" => DatabaseProvider.PostgreSql,
-                "sqlserver" or "mssql" => DatabaseProvider.SqlServer,
-                "mysql" => DatabaseProvider.MySql,
-                _ => DatabaseProvider.PostgreSql
             };
         }
     }
