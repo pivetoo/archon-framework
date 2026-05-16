@@ -87,6 +87,21 @@ namespace Archon.Api.Controllers
             return Http200(new { request.IsActive }, request.IsActive ? "Usuário reativado." : "Usuário desativado.");
         }
 
+        [RequireAccess("Permite atualizar usuario do contrato ativo.")]
+        [PutEndpoint("{userId:long}")]
+        public async Task<IActionResult> Update(long userId, [FromBody] UpdateUserBodyRequest request, CancellationToken cancellationToken)
+        {
+            long? contractId = ResolveCurrentContractId();
+            if (!contractId.HasValue)
+            {
+                return Http403("Contrato ativo não identificado na sessão.");
+            }
+
+            await identityUsersClient.UpdateUserAsync(userId, request.Name, request.Password, request.IsActive, cancellationToken);
+            ContractUserDto user = await identityUsersClient.UpdateUserRoleInContractAsync(userId, contractId.Value, request.RoleId, cancellationToken);
+            return Http200(user, "Usuário atualizado.");
+        }
+
         private long? ResolveCurrentContractId()
         {
             string? value = User.FindFirst("contract_id")?.Value;
@@ -115,5 +130,16 @@ namespace Archon.Api.Controllers
     public sealed class SetActiveBodyRequest
     {
         public bool IsActive { get; set; }
+    }
+
+    public sealed class UpdateUserBodyRequest
+    {
+        public string Name { get; set; } = string.Empty;
+
+        public string? Password { get; set; }
+
+        public bool IsActive { get; set; }
+
+        public long RoleId { get; set; }
     }
 }
