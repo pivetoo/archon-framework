@@ -176,7 +176,7 @@ namespace Archon.Infrastructure.MultiTenancy
                 ConnectionString = payload.ConnectionString,
                 Schema = string.IsNullOrWhiteSpace(payload.Schema) ? "public" : payload.Schema,
                 DatabaseProvider = MapDatabaseProvider(payload.DatabaseProvider),
-                ApiKey = payload.IntegrationSecret
+                ApiKey = payload.ApiKey
             };
         }
 

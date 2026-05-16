@@ -62,8 +62,8 @@ namespace Archon.Infrastructure.MultiTenancy
 
             httpClient.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
             httpClient.Timeout = options.RequestTimeout;
-            httpClient.DefaultRequestHeaders.Remove("X-Integration-Secret");
-            httpClient.DefaultRequestHeaders.Add("X-Integration-Secret", options.IntegrationSecret);
+            httpClient.DefaultRequestHeaders.Remove("X-Api-Key");
+            httpClient.DefaultRequestHeaders.Add("X-Api-Key", options.ApiKey);
         }
 
         private sealed class TenantResolutionEnvelope
@@ -87,6 +87,6 @@ namespace Archon.Infrastructure.MultiTenancy
 
         public string Schema { get; set; } = "public";
 
-        public string IntegrationSecret { get; set; } = string.Empty;
+        public string ApiKey { get; set; } = string.Empty;
     }
 }

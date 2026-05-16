@@ -100,7 +100,7 @@ namespace Archon.Infrastructure.MultiTenancy
             IConfigurationSection tenantDatabasesSection = configuration.GetSection("TenantDatabases");
             foreach (IConfigurationSection tenantSection in tenantDatabasesSection.GetChildren())
             {
-                string? configuredApiKey = tenantSection["ApiKey"] ?? tenantSection["IntegrationSecret"];
+                string? configuredApiKey = tenantSection["ApiKey"];
                 if (string.Equals(configuredApiKey, normalizedApiKey, StringComparison.Ordinal))
                 {
                     TenantInfo? tenant = CreateTenantInfo(tenantSection);
@@ -147,11 +147,7 @@ namespace Archon.Infrastructure.MultiTenancy
 
             TenantDatabaseOption option = tenantSection.Get<TenantDatabaseOption>() ?? new TenantDatabaseOption();
 
-            string? apiKey = option.ApiKey;
-            if (string.IsNullOrWhiteSpace(apiKey))
-            {
-                apiKey = tenantSection["IntegrationSecret"];
-            }
+            string? apiKey = tenantSection["ApiKey"];
 
             return new TenantInfo
             {

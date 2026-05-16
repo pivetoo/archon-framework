@@ -4,7 +4,7 @@ namespace Archon.Infrastructure.MultiTenancy
     {
         public string BaseUrl { get; init; } = string.Empty;
 
-        public string IntegrationSecret { get; init; } = string.Empty;
+        public string ApiKey { get; init; } = string.Empty;
 
         public string ApplicationId { get; init; } = string.Empty;
 
@@ -12,6 +12,6 @@ namespace Archon.Infrastructure.MultiTenancy
 
         public TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(10);
 
-        public bool IsConfigured => !string.IsNullOrWhiteSpace(BaseUrl) && !string.IsNullOrWhiteSpace(IntegrationSecret);
+        public bool IsConfigured => !string.IsNullOrWhiteSpace(BaseUrl) && !string.IsNullOrWhiteSpace(ApiKey);
     }
 }

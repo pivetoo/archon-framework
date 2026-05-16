@@ -50,10 +50,10 @@ namespace Archon.Testing.Unit.Api.Attributes
         }
 
         [Test]
-        public void OnAuthorization_ShouldAllow_UnauthenticatedWithValidIntegrationSecretAndResolveTenant()
+        public void OnAuthorization_ShouldAllow_UnauthenticatedWithValidApiKeyAndResolveTenant()
         {
             DefaultHttpContext httpContext = new DefaultHttpContext();
-            httpContext.Request.Headers["X-Integration-Secret"] = "tenant1-secret";
+            httpContext.Request.Headers["X-Api-Key"] = "tenant1-secret";
             httpContext.RequestServices = CreateServiceProviderWithTenantResolver();
 
             ControllerActionDescriptor actionDescriptor = new ControllerActionDescriptor
@@ -75,10 +75,10 @@ namespace Archon.Testing.Unit.Api.Attributes
         }
 
         [Test]
-        public void OnAuthorization_ShouldReturnUnauthorized_UnauthenticatedWithInvalidIntegrationSecret()
+        public void OnAuthorization_ShouldReturnUnauthorized_UnauthenticatedWithInvalidApiKey()
         {
             DefaultHttpContext httpContext = new DefaultHttpContext();
-            httpContext.Request.Headers["X-Integration-Secret"] = "invalid-secret";
+            httpContext.Request.Headers["X-Api-Key"] = "invalid-secret";
             httpContext.RequestServices = CreateServiceProviderWithTenantResolver();
 
             ControllerActionDescriptor actionDescriptor = new ControllerActionDescriptor
@@ -99,7 +99,7 @@ namespace Archon.Testing.Unit.Api.Attributes
         }
 
         [Test]
-        public void OnAuthorization_ShouldReturnUnauthorized_UnauthenticatedWithMissingIntegrationSecret()
+        public void OnAuthorization_ShouldReturnUnauthorized_UnauthenticatedWithMissingApiKey()
         {
             DefaultHttpContext httpContext = new DefaultHttpContext();
             httpContext.RequestServices = CreateServiceProviderWithTenantResolver();
@@ -203,9 +203,9 @@ namespace Archon.Testing.Unit.Api.Attributes
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     { "TenantDatabases:tenant1:ConnectionString", "Host=localhost;Database=db1;" },
-                    { "TenantDatabases:tenant1:IntegrationSecret", "tenant1-secret" },
+                    { "TenantDatabases:tenant1:ApiKey", "tenant1-secret" },
                     { "TenantDatabases:tenant2:ConnectionString", "Host=localhost;Database=db2;" },
-                    { "TenantDatabases:tenant2:IntegrationSecret", "tenant2-secret" }
+                    { "TenantDatabases:tenant2:ApiKey", "tenant2-secret" }
                 })
                 .Build();
 

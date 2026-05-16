@@ -143,7 +143,7 @@ namespace Archon.Infrastructure.IdentityManagement
             }
 
             string? tenantId = integration.GetParameter("TenantId");
-            string? apiKey = integration.GetParameter("ApiKey") ?? integration.GetParameter("IntegrationSecret");
+            string? apiKey = integration.GetParameter("ApiKey");
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 Console.WriteLine("IdentityManagementClient: integration 'identity-management' is configured without ApiKey.");

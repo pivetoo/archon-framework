@@ -119,8 +119,7 @@ namespace Archon.Api.Attributes
 
         private static TenantInfo? ResolveByApiKeyHeader(HttpRequest request, ITenantResolver tenantResolver)
         {
-            string? providedApiKey = request.Headers["X-Api-Key"].FirstOrDefault()
-                ?? request.Headers["X-Integration-Secret"].FirstOrDefault();
+            string? providedApiKey = request.Headers["X-Api-Key"].FirstOrDefault();
 
             if (string.IsNullOrWhiteSpace(providedApiKey))
             {
