@@ -10,6 +10,8 @@ namespace Archon.Infrastructure.MultiTenancy
 
         public TimeSpan CacheTtl { get; init; } = TimeSpan.FromMinutes(5);
 
+        public TimeSpan NegativeCacheTtl { get; init; } = TimeSpan.FromSeconds(60);
+
         public TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(10);
 
         public bool IsConfigured => !string.IsNullOrWhiteSpace(BaseUrl) && !string.IsNullOrWhiteSpace(ApiKey);

@@ -52,10 +52,7 @@ namespace Archon.Infrastructure.MultiTenancy
                 TenantInfo? tenant = await ResolveFromCatalogAsync(tenantId, cancellationToken)
                     ?? await configurationFallback.ResolveAsync(tenantId, cancellationToken);
 
-                if (tenant is not null)
-                {
-                    cache.Set(cacheKey, tenant, options.CacheTtl);
-                }
+                cache.Set(cacheKey, tenant, tenant is not null ? options.CacheTtl : options.NegativeCacheTtl);
 
                 return tenant;
             }
@@ -112,10 +109,7 @@ namespace Archon.Infrastructure.MultiTenancy
                 TenantInfo? tenant = await ResolveByApiKeyFromCatalogAsync(normalizedApiKey, cancellationToken)
                     ?? await configurationFallback.ResolveByApiKeyAsync(normalizedApiKey, cancellationToken);
 
-                if (tenant is not null)
-                {
-                    cache.Set(cacheKey, tenant, options.CacheTtl);
-                }
+                cache.Set(cacheKey, tenant, tenant is not null ? options.CacheTtl : options.NegativeCacheTtl);
 
                 return tenant;
             }
