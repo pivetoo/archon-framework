@@ -6,6 +6,8 @@ namespace Archon.Infrastructure.MultiTenancy
 
         public string IdMApiKey { get; init; } = string.Empty;
 
+        public string ApiKey { get; init; } = string.Empty;
+
         public string ApplicationId { get; init; } = string.Empty;
 
         public TimeSpan CacheTtl { get; init; } = TimeSpan.FromMinutes(5);
@@ -14,6 +16,8 @@ namespace Archon.Infrastructure.MultiTenancy
 
         public TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(10);
 
-        public bool IsConfigured => !string.IsNullOrWhiteSpace(BaseUrl) && !string.IsNullOrWhiteSpace(IdMApiKey);
+        public string ResolvedApiKey => !string.IsNullOrWhiteSpace(IdMApiKey) ? IdMApiKey : ApiKey;
+
+        public bool IsConfigured => !string.IsNullOrWhiteSpace(BaseUrl) && !string.IsNullOrWhiteSpace(ResolvedApiKey);
     }
 }

@@ -79,7 +79,7 @@ namespace Archon.Infrastructure.MultiTenancy
             httpClient.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
             httpClient.Timeout = options.RequestTimeout;
             httpClient.DefaultRequestHeaders.Remove("X-Api-Key");
-            httpClient.DefaultRequestHeaders.Add("X-Api-Key", options.IdMApiKey);
+            httpClient.DefaultRequestHeaders.Add("X-Api-Key", options.ResolvedApiKey);
         }
 
         private sealed class TenantResolutionEnvelope

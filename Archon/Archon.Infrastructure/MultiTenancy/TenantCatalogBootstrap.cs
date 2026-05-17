@@ -83,7 +83,7 @@ namespace Archon.Infrastructure.MultiTenancy
             using HttpClient client = new();
             client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
             client.Timeout = options.RequestTimeout;
-            client.DefaultRequestHeaders.Add("X-Api-Key", options.IdMApiKey);
+            client.DefaultRequestHeaders.Add("X-Api-Key", options.ResolvedApiKey);
 
             string url = $"api/Tenants/ListByApplication?applicationId={Uri.EscapeDataString(options.ApplicationId)}";
 
