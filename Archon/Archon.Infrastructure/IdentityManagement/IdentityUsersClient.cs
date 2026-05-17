@@ -163,6 +163,105 @@ namespace Archon.Infrastructure.IdentityManagement
             }
         }
 
+        public async Task<ContractRoleDto?> GetRoleByIdAsync(long roleId, CancellationToken ct = default)
+        {
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
+            if (baseUrl is null)
+            {
+                throw new InvalidOperationException("Integration 'identity-management' is not configured.");
+            }
+
+            RestResponse<ApiResponse<ContractRoleDto>> response = await restApi.Fetch<ApiResponse<ContractRoleDto>>(
+                RestRequest.Get($"{baseUrl}/api/Roles/GetById/{roleId}").WithTenantApiKey(tenantId, secret!), ct);
+
+            if (!response.Ok)
+            {
+                if (response.Status == 404)
+                {
+                    return null;
+                }
+
+                throw new HttpRequestException($"IdentityManagement /api/Roles/GetById/{roleId} returned {response.Status}");
+            }
+
+            return response.Data?.Data;
+        }
+
+        public async Task<ContractRoleDto> CreateRoleAsync(CreateRolePayload payload, CancellationToken ct = default)
+        {
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
+            if (baseUrl is null)
+            {
+                throw new InvalidOperationException("Integration 'identity-management' is not configured.");
+            }
+
+            RestResponse<ApiResponse<ContractRoleDto>> response = await restApi.Fetch<ApiResponse<ContractRoleDto>>(
+                RestRequest.Post($"{baseUrl}/api/Roles/Create", payload).WithTenantApiKey(tenantId, secret!), ct);
+
+            if (!response.Ok || response.Data?.Data is null)
+            {
+                throw new HttpRequestException($"IdentityManagement /api/Roles/Create returned {response.Status}");
+            }
+
+            return response.Data.Data;
+        }
+
+        public async Task<ContractRoleDto> UpdateRoleAsync(long roleId, UpdateRolePayload payload, CancellationToken ct = default)
+        {
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
+            if (baseUrl is null)
+            {
+                throw new InvalidOperationException("Integration 'identity-management' is not configured.");
+            }
+
+            RestResponse<ApiResponse<ContractRoleDto>> response = await restApi.Fetch<ApiResponse<ContractRoleDto>>(
+                RestRequest.Put($"{baseUrl}/api/Roles/Update/{roleId}", payload).WithTenantApiKey(tenantId, secret!), ct);
+
+            if (!response.Ok || response.Data?.Data is null)
+            {
+                throw new HttpRequestException($"IdentityManagement /api/Roles/Update/{roleId} returned {response.Status}");
+            }
+
+            return response.Data.Data;
+        }
+
+        public async Task DeleteRoleAsync(long roleId, CancellationToken ct = default)
+        {
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
+            if (baseUrl is null)
+            {
+                throw new InvalidOperationException("Integration 'identity-management' is not configured.");
+            }
+
+            RestResponse<ApiResponse<object>> response = await restApi.Fetch<ApiResponse<object>>(
+                RestRequest.Delete($"{baseUrl}/api/Roles/Delete/{roleId}").WithTenantApiKey(tenantId, secret!), ct);
+
+            if (!response.Ok)
+            {
+                string message = response.Data?.Message ?? $"IdentityManagement /api/Roles/Delete/{roleId} returned {response.Status}";
+                throw new HttpRequestException(message);
+            }
+        }
+
+        public async Task<List<AccessResourceDto>> GetAccessResourcesByContractAsync(long contractId, CancellationToken ct = default)
+        {
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
+            if (baseUrl is null)
+            {
+                throw new InvalidOperationException("Integration 'identity-management' is not configured.");
+            }
+
+            RestResponse<ApiResponse<List<AccessResourceDto>>> response = await restApi.Fetch<ApiResponse<List<AccessResourceDto>>>(
+                RestRequest.Get($"{baseUrl}/api/AccessResources/GetByContract/{contractId}").WithTenantApiKey(tenantId, secret!), ct);
+
+            if (!response.Ok)
+            {
+                throw new HttpRequestException($"IdentityManagement /api/AccessResources/GetByContract/{contractId} returned {response.Status}");
+            }
+
+            return response.Data?.Data ?? [];
+        }
+
         public async Task<List<ContractRoleDto>> GetRolesByContractAsync(long contractId, CancellationToken ct = default)
         {
             (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
@@ -261,6 +360,8 @@ namespace Archon.Infrastructure.IdentityManagement
         public bool IsRoot { get; set; }
 
         public bool IsDefault { get; set; }
+
+        public List<long> AccessResourceIds { get; set; } = [];
     }
 
     public sealed class CreateUserInContractPayload
@@ -276,5 +377,52 @@ namespace Archon.Infrastructure.IdentityManagement
         public long RoleId { get; set; }
 
         public long ContractId { get; set; }
+    }
+
+    public sealed class CreateRolePayload
+    {
+        public string Name { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+
+        public long ContractId { get; set; }
+
+        public bool IsRoot { get; set; }
+
+        public bool IsDefault { get; set; }
+
+        public List<long> AccessResourceIds { get; set; } = [];
+    }
+
+    public sealed class UpdateRolePayload
+    {
+        public string Name { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+
+        public bool IsRoot { get; set; }
+
+        public bool IsDefault { get; set; }
+
+        public List<long> AccessResourceIds { get; set; } = [];
+    }
+
+    public sealed class AccessResourceDto
+    {
+        public long Id { get; set; }
+
+        public long SystemApplicationId { get; set; }
+
+        public string Name { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+
+        public string Controller { get; set; } = string.Empty;
+
+        public string Action { get; set; } = string.Empty;
+
+        public string HttpMethod { get; set; } = string.Empty;
+
+        public string Route { get; set; } = string.Empty;
     }
 }

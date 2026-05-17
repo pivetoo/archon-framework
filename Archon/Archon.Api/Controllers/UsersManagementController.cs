@@ -102,6 +102,82 @@ namespace Archon.Api.Controllers
             return Http200(user, "Usuário atualizado.");
         }
 
+        [RequireAccess("Permite consultar um perfil do contrato ativo.")]
+        [GetEndpoint("{roleId:long}")]
+        public async Task<IActionResult> GetRoleById(long roleId, CancellationToken cancellationToken)
+        {
+            ContractRoleDto? role = await identityUsersClient.GetRoleByIdAsync(roleId, cancellationToken);
+            if (role is null)
+            {
+                return Http404("Perfil não encontrado.");
+            }
+
+            return Http200(role);
+        }
+
+        [RequireAccess("Permite criar um perfil no contrato ativo.")]
+        [PostEndpoint]
+        public async Task<IActionResult> CreateRole([FromBody] CreateRoleBodyRequest request, CancellationToken cancellationToken)
+        {
+            long? contractId = ResolveCurrentContractId();
+            if (!contractId.HasValue)
+            {
+                return Http403("Contrato ativo não identificado na sessão.");
+            }
+
+            CreateRolePayload payload = new()
+            {
+                Name = request.Name,
+                Description = request.Description,
+                ContractId = contractId.Value,
+                IsRoot = request.IsRoot,
+                IsDefault = request.IsDefault,
+                AccessResourceIds = request.AccessResourceIds
+            };
+
+            ContractRoleDto role = await identityUsersClient.CreateRoleAsync(payload, cancellationToken);
+            return Http201(role, "Perfil criado.");
+        }
+
+        [RequireAccess("Permite atualizar um perfil do contrato ativo.")]
+        [PutEndpoint("{roleId:long}")]
+        public async Task<IActionResult> UpdateRole(long roleId, [FromBody] UpdateRoleBodyRequestFull request, CancellationToken cancellationToken)
+        {
+            UpdateRolePayload payload = new()
+            {
+                Name = request.Name,
+                Description = request.Description,
+                IsRoot = request.IsRoot,
+                IsDefault = request.IsDefault,
+                AccessResourceIds = request.AccessResourceIds
+            };
+
+            ContractRoleDto role = await identityUsersClient.UpdateRoleAsync(roleId, payload, cancellationToken);
+            return Http200(role, "Perfil atualizado.");
+        }
+
+        [RequireAccess("Permite excluir um perfil do contrato ativo.")]
+        [DeleteEndpoint("{roleId:long}")]
+        public async Task<IActionResult> DeleteRole(long roleId, CancellationToken cancellationToken)
+        {
+            await identityUsersClient.DeleteRoleAsync(roleId, cancellationToken);
+            return Http200("Perfil excluído.");
+        }
+
+        [RequireAccess("Permite listar as permissões disponíveis no contrato ativo.")]
+        [GetEndpoint]
+        public async Task<IActionResult> GetAccessResources(CancellationToken cancellationToken)
+        {
+            long? contractId = ResolveCurrentContractId();
+            if (!contractId.HasValue)
+            {
+                return Http403("Contrato ativo não identificado na sessão.");
+            }
+
+            List<AccessResourceDto> resources = await identityUsersClient.GetAccessResourcesByContractAsync(contractId.Value, cancellationToken);
+            return Http200(resources);
+        }
+
         private long? ResolveCurrentContractId()
         {
             string? value = User.FindFirst("contract_id")?.Value;
@@ -141,5 +217,31 @@ namespace Archon.Api.Controllers
         public bool IsActive { get; set; }
 
         public long RoleId { get; set; }
+    }
+
+    public sealed class CreateRoleBodyRequest
+    {
+        public string Name { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+
+        public bool IsRoot { get; set; }
+
+        public bool IsDefault { get; set; }
+
+        public List<long> AccessResourceIds { get; set; } = [];
+    }
+
+    public sealed class UpdateRoleBodyRequestFull
+    {
+        public string Name { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+
+        public bool IsRoot { get; set; }
+
+        public bool IsDefault { get; set; }
+
+        public List<long> AccessResourceIds { get; set; } = [];
     }
 }
