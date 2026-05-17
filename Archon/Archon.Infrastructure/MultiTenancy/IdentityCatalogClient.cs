@@ -37,6 +37,22 @@ namespace Archon.Infrastructure.MultiTenancy
             return await SendAsync($"api/Tenants/ResolveByApiKey?{query}", cancellationToken);
         }
 
+        public async Task<IReadOnlyList<TenantResolutionPayload>> ListByApplicationAsync(string applicationId, CancellationToken cancellationToken)
+        {
+            using HttpRequestMessage request = new(HttpMethod.Get, $"api/Tenants/ListByApplication?applicationId={Uri.EscapeDataString(applicationId)}");
+            using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return Array.Empty<TenantResolutionPayload>();
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            TenantResolutionListEnvelope? envelope = await response.Content.ReadFromJsonAsync<TenantResolutionListEnvelope>(JsonOptions, cancellationToken);
+            return envelope?.Data ?? new List<TenantResolutionPayload>();
+        }
+
         private async Task<TenantResolutionPayload?> SendAsync(string relativeUrl, CancellationToken cancellationToken)
         {
             using HttpRequestMessage request = new(HttpMethod.Get, relativeUrl);
@@ -70,6 +86,12 @@ namespace Archon.Infrastructure.MultiTenancy
         {
             [JsonPropertyName("data")]
             public TenantResolutionPayload? Data { get; set; }
+        }
+
+        private sealed class TenantResolutionListEnvelope
+        {
+            [JsonPropertyName("data")]
+            public List<TenantResolutionPayload>? Data { get; set; }
         }
     }
 

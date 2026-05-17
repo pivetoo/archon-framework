@@ -28,6 +28,12 @@ namespace Archon.Infrastructure.DependencyInjection
     {
         public static IServiceCollection AddArchonMultiTenancy(this IServiceCollection services, IConfiguration configuration)
         {
+            if (configuration is IConfigurationBuilder configBuilder)
+            {
+                IReadOnlyList<BootstrapTenant> tenants = TenantCatalogBootstrap.Hydrate(configuration);
+                TenantCatalogBootstrap.OverlayOnConfiguration(configBuilder, tenants);
+            }
+
             services.Configure<TenantDatabaseOptions>(configuration);
             services.Configure<IdentityCatalogOptions>(configuration.GetSection("IdentityCatalog"));
             services.AddMemoryCache();
