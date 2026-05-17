@@ -14,6 +14,9 @@ namespace Archon.Infrastructure.MultiTenancy
             WriteIndented = true
         };
 
+        private static readonly object HydrationLock = new();
+        private static readonly Dictionary<string, IReadOnlyList<BootstrapTenant>> HydrationCache = new();
+
         public static IReadOnlyList<BootstrapTenant> Hydrate(IConfiguration configuration)
         {
             IdentityCatalogOptions options = new();
@@ -24,6 +27,23 @@ namespace Archon.Infrastructure.MultiTenancy
                 return Array.Empty<BootstrapTenant>();
             }
 
+            string cacheKey = $"{options.BaseUrl}|{options.ApplicationId}";
+
+            lock (HydrationLock)
+            {
+                if (HydrationCache.TryGetValue(cacheKey, out IReadOnlyList<BootstrapTenant>? cached))
+                {
+                    return cached;
+                }
+
+                IReadOnlyList<BootstrapTenant> resolved = HydrateOnce(configuration, options);
+                HydrationCache[cacheKey] = resolved;
+                return resolved;
+            }
+        }
+
+        private static IReadOnlyList<BootstrapTenant> HydrateOnce(IConfiguration configuration, IdentityCatalogOptions options)
+        {
             string snapshotPath = ResolveSnapshotPath(configuration);
 
             try
