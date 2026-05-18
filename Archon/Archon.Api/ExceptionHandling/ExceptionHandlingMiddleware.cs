@@ -3,7 +3,6 @@ using Archon.Core.Exceptions;
 using Archon.Core.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Options;
 using System.Diagnostics;
 
 namespace Archon.Api.ExceptionHandling
@@ -21,7 +20,7 @@ namespace Archon.Api.ExceptionHandling
         {
             IStringLocalizer<ArchonApiResource> archonLocalizer = context.RequestServices.GetRequiredService<IStringLocalizer<ArchonApiResource>>();
             ILogger<ExceptionHandlingMiddleware> logger = context.RequestServices.GetRequiredService<ILogger<ExceptionHandlingMiddleware>>();
-            LocalizationCatalogOptions catalog = context.RequestServices.GetRequiredService<IOptions<LocalizationCatalogOptions>>().Value;
+            LocalizationCatalogOptions catalog = context.RequestServices.GetRequiredService<LocalizationCatalogOptions>();
             IStringLocalizerFactory localizerFactory = context.RequestServices.GetRequiredService<IStringLocalizerFactory>();
 
             string traceId = Activity.Current?.TraceId.ToString() ?? string.Empty;
