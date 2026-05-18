@@ -1,12 +1,10 @@
-using System.Diagnostics;
+using Archon.Api.Localization;
 using Archon.Core.Exceptions;
 using Archon.Core.Responses;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Archon.Api.Localization;
+using System.Diagnostics;
 
 namespace Archon.Api.ExceptionHandling
 {
@@ -70,17 +68,20 @@ namespace Archon.Api.ExceptionHandling
                     context.Request.Method, context.Request.Path, traceId, exception.Message);
                 await WriteErrorAsync(context, StatusCodes.Status404NotFound, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
             }
-            catch (InvalidOperationException exception) when (IsClientError(exception.Message))
-            {
-                logger.LogInformation("400 Bad Request {Method} {Path} traceId={TraceId} message={Message}",
-                    context.Request.Method, context.Request.Path, traceId, exception.Message);
-                await WriteErrorAsync(context, StatusCodes.Status400BadRequest, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
-            }
             catch (InvalidOperationException exception)
             {
-                logger.LogError(exception, "500 Internal Server Error {Method} {Path} traceId={TraceId}",
-                    context.Request.Method, context.Request.Path, traceId);
-                await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, archonLocalizer["error.unexpected"]);
+                if (TryResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message, null, out string resolved))
+                {
+                    logger.LogInformation("400 Bad Request {Method} {Path} traceId={TraceId} key={Key}",
+                        context.Request.Method, context.Request.Path, traceId, exception.Message);
+                    await WriteErrorAsync(context, StatusCodes.Status400BadRequest, resolved);
+                }
+                else
+                {
+                    logger.LogError(exception, "500 Internal Server Error {Method} {Path} traceId={TraceId}",
+                        context.Request.Method, context.Request.Path, traceId);
+                    await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, archonLocalizer["error.unexpected"]);
+                }
             }
             catch (ArgumentException exception)
             {
@@ -102,39 +103,46 @@ namespace Archon.Api.ExceptionHandling
             }
         }
 
-        private static bool IsClientError(string? message)
+        private static bool TryResolveMessage(
+            IStringLocalizer<ArchonApiResource> archonLocalizer,
+            IStringLocalizerFactory factory,
+            LocalizationCatalogOptions catalog,
+            string? message,
+            object[]? args,
+            out string resolved)
         {
             if (string.IsNullOrWhiteSpace(message))
             {
+                resolved = archonLocalizer["error.unexpected.short"];
                 return false;
             }
 
-            string normalized = message.Trim().ToLowerInvariant();
-            string[] clientErrorPrefixes =
-            [
-                "request.",
-                "validation.",
-                "record.",
-                "error.",
-                "auth.",
-                "tenant.",
-                "user.",
-                "role.",
-                "contract.",
-                "company.",
-                "proposal.",
-                "opportunity.",
-                "campaign.",
-                "creator.",
-                "brand.",
-                "financial.",
-                "deliverable.",
-                "integration.",
-                "automation.",
-                "notification."
-            ];
+            object[] formatArgs = args ?? [];
 
-            return clientErrorPrefixes.Any(prefix => normalized.StartsWith(prefix, StringComparison.Ordinal));
+            foreach (Type resourceType in catalog.ResourceTypes)
+            {
+                IStringLocalizer appLocalizer = factory.Create(resourceType);
+                LocalizedString localized = formatArgs.Length > 0
+                    ? appLocalizer[message, formatArgs]
+                    : appLocalizer[message];
+                if (!localized.ResourceNotFound)
+                {
+                    resolved = localized.Value;
+                    return true;
+                }
+            }
+
+            LocalizedString archon = formatArgs.Length > 0
+                ? archonLocalizer[message, formatArgs]
+                : archonLocalizer[message];
+            if (!archon.ResourceNotFound)
+            {
+                resolved = archon.Value;
+                return true;
+            }
+
+            resolved = message;
+            return false;
         }
 
         private static string ResolveMessage(
@@ -144,31 +152,8 @@ namespace Archon.Api.ExceptionHandling
             string message,
             object[]? args = null)
         {
-            if (string.IsNullOrWhiteSpace(message))
-            {
-                return archonLocalizer["error.unexpected.short"];
-            }
-
-            object[] formatArgs = args ?? [];
-
-            // Tenta primeiro nos resources da aplicacao consumidora (mais especificos)
-            foreach (Type resourceType in catalog.ResourceTypes)
-            {
-                IStringLocalizer appLocalizer = factory.Create(resourceType);
-                LocalizedString localized = formatArgs.Length > 0
-                    ? appLocalizer[message, formatArgs]
-                    : appLocalizer[message];
-                if (!localized.ResourceNotFound)
-                {
-                    return localized.Value;
-                }
-            }
-
-            // Cai no resource do Archon
-            LocalizedString archon = formatArgs.Length > 0
-                ? archonLocalizer[message, formatArgs]
-                : archonLocalizer[message];
-            return archon.ResourceNotFound ? message : archon.Value;
+            TryResolveMessage(archonLocalizer, factory, catalog, message, args, out string resolved);
+            return resolved;
         }
 
         private static Task WriteErrorAsync(HttpContext context, int statusCode, string message)

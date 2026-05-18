@@ -19,7 +19,10 @@ namespace Archon.Api.Security.Authentication
 
         public async Task<ClaimsPrincipal?> ValidateTokenAsync(string token, CancellationToken cancellationToken = default)
         {
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler
+            {
+                MapInboundClaims = false
+            };
             OpenIdConnectConfigurationInfo? configuration = await identityManagementClient.GetOpenIdConfigurationAsync(cancellationToken);
             IReadOnlyCollection<SecurityKey> signingKeys = await identityManagementClient.GetSigningKeysAsync(cancellationToken);
 
