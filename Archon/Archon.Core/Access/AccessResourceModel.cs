@@ -8,6 +8,8 @@ namespace Archon.Core.Access
 
         public string Description { get; init; } = string.Empty;
 
+        public string Area { get; init; } = string.Empty;
+
         public string Controller { get; init; } = string.Empty;
 
         public string Action { get; init; } = string.Empty;
