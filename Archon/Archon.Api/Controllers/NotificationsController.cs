@@ -16,7 +16,7 @@ namespace Archon.Api.Controllers
         }
 
         [RequireAccess("Permite listar as notificações do usuário atual.")]
-        [GetEndpoint("[action]")]
+        [GetEndpoint]
         public async Task<IActionResult> Get([FromQuery] PagedRequest request, [FromQuery] bool unreadOnly, CancellationToken cancellationToken)
         {
             var result = await notificationService.GetForCurrentUser(request, unreadOnly, cancellationToken);
@@ -40,7 +40,7 @@ namespace Archon.Api.Controllers
         }
 
         [RequireAccess("Permite cadastrar uma notificação.")]
-        [PostEndpoint("[action]")]
+        [PostEndpoint]
         public async Task<IActionResult> Create([FromBody] CreateNotificationRequest request, CancellationToken cancellationToken)
         {
             IActionResult? validationResult = ValidateBody(request);

@@ -47,7 +47,7 @@ namespace Archon.Api.Controllers
         }
 
         [RequireAccess("Permite listar os registros recentes de auditoria com filtros.")]
-        [GetEndpoint("[action]")]
+        [GetEndpoint]
         public async Task<IActionResult> Recent(
             [FromQuery] string? entityName,
             [FromQuery] AuditAction? action,
@@ -62,7 +62,7 @@ namespace Archon.Api.Controllers
         }
 
         [RequireAccess("Permite consultar estatisticas agregadas dos registros de auditoria.")]
-        [GetEndpoint("[action]")]
+        [GetEndpoint]
         public async Task<IActionResult> Stats(
             [FromQuery] DateTimeOffset? from,
             [FromQuery] DateTimeOffset? to,
