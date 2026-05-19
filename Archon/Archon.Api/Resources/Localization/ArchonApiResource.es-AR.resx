@@ -138,6 +138,12 @@
   <data name="common.error.unknown" xml:space="preserve">
     <value>Error desconocido</value>
   </data>
+  <data name="common.error.forbidden.title" xml:space="preserve">
+    <value>Sin permiso</value>
+  </data>
+  <data name="common.error.forbidden.description" xml:space="preserve">
+    <value>No tenés permiso para realizar esta acción.</value>
+  </data>
   <data name="common.validation.moreErrors" xml:space="preserve">
     <value>Y {0} error(es) más.</value>
   </data>

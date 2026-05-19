@@ -243,6 +243,12 @@
   <data name="common.error.unknown" xml:space="preserve">
     <value>Unknown error</value>
   </data>
+  <data name="common.error.forbidden.title" xml:space="preserve">
+    <value>Not allowed</value>
+  </data>
+  <data name="common.error.forbidden.description" xml:space="preserve">
+    <value>You don't have permission to perform this action.</value>
+  </data>
   <data name="common.validation.moreErrors" xml:space="preserve">
     <value>And {0} more error(s).</value>
   </data>
