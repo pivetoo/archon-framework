@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Archon.Api.Controllers
 {
+    [AccessArea("audit.area")]
     public sealed class AuditController : ApiControllerBase
     {
         private readonly IAuditService auditService;
@@ -15,7 +16,7 @@ namespace Archon.Api.Controllers
             this.auditService = auditService;
         }
 
-        [RequireAccess("Permite consultar o histórico de auditoria de uma entidade específica.")]
+        [RequireAccess("audit.getByEntity.description")]
         [GetEndpoint("entity/{entityName}/{entityId}")]
         public async Task<IActionResult> GetByEntity(string entityName, string entityId, [FromQuery] PagedRequest request, CancellationToken cancellationToken)
         {
@@ -33,7 +34,7 @@ namespace Archon.Api.Controllers
             return Http200(result);
         }
 
-        [RequireAccess("Permite consultar os detalhes de um registro específico da auditoria.")]
+        [RequireAccess("audit.getById.description")]
         [GetEndpoint("{auditEntryId:long}")]
         public async Task<IActionResult> GetById(long auditEntryId, CancellationToken cancellationToken)
         {
@@ -46,7 +47,7 @@ namespace Archon.Api.Controllers
             return result is null ? Http404(Localizer["record.auditEntry.notFound"]) : Http200(result);
         }
 
-        [RequireAccess("Permite listar os registros recentes de auditoria com filtros.")]
+        [RequireAccess("audit.recent.description")]
         [GetEndpoint]
         public async Task<IActionResult> Recent(
             [FromQuery] string? entityName,
@@ -61,7 +62,7 @@ namespace Archon.Api.Controllers
             return Http200(result);
         }
 
-        [RequireAccess("Permite consultar estatisticas agregadas dos registros de auditoria.")]
+        [RequireAccess("audit.stats.description")]
         [GetEndpoint]
         public async Task<IActionResult> Stats(
             [FromQuery] DateTimeOffset? from,

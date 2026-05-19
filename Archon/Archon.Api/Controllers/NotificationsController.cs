@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Archon.Api.Controllers
 {
+    [AccessArea("notifications.area")]
     public sealed class NotificationsController : ApiControllerBase
     {
         private readonly INotificationService notificationService;
@@ -15,7 +16,7 @@ namespace Archon.Api.Controllers
             this.notificationService = notificationService;
         }
 
-        [RequireAccess("Permite listar as notificações do usuário atual.")]
+        [RequireAccess("notifications.get.description")]
         [GetEndpoint]
         public async Task<IActionResult> Get([FromQuery] PagedRequest request, [FromQuery] bool unreadOnly, CancellationToken cancellationToken)
         {
@@ -23,7 +24,7 @@ namespace Archon.Api.Controllers
             return Http200(result);
         }
 
-        [RequireAccess("Permite consultar a quantidade de notificações não lidas do usuário atual.")]
+        [RequireAccess("notifications.getUnreadCount.description")]
         [GetEndpoint("unread-count")]
         public async Task<IActionResult> GetUnreadCount(CancellationToken cancellationToken)
         {
@@ -31,7 +32,7 @@ namespace Archon.Api.Controllers
             return Http200(new { count });
         }
 
-        [RequireAccess("Permite consultar uma notificação por id.")]
+        [RequireAccess("notifications.getById.description")]
         [GetEndpoint("{id:long}")]
         public async Task<IActionResult> GetById(long id, CancellationToken cancellationToken)
         {
@@ -39,7 +40,7 @@ namespace Archon.Api.Controllers
             return result is null ? Http404(Localizer["record.notFound"]) : Http200(result);
         }
 
-        [RequireAccess("Permite cadastrar uma notificação.")]
+        [RequireAccess("notifications.create.description")]
         [PostEndpoint]
         public async Task<IActionResult> Create([FromBody] CreateNotificationRequest request, CancellationToken cancellationToken)
         {
@@ -53,7 +54,7 @@ namespace Archon.Api.Controllers
             return Http201(result, Localizer["record.created"]);
         }
 
-        [RequireAccess("Permite marcar uma notificação como lida.")]
+        [RequireAccess("notifications.markAsRead.description")]
         [PostEndpoint("{id:long}/read")]
         public async Task<IActionResult> MarkAsRead(long id, CancellationToken cancellationToken)
         {
@@ -61,7 +62,7 @@ namespace Archon.Api.Controllers
             return Http204();
         }
 
-        [RequireAccess("Permite marcar todas as notificações do usuário atual como lidas.")]
+        [RequireAccess("notifications.markAllAsRead.description")]
         [PostEndpoint("mark-all-read")]
         public async Task<IActionResult> MarkAllAsRead(CancellationToken cancellationToken)
         {
@@ -69,7 +70,7 @@ namespace Archon.Api.Controllers
             return Http204();
         }
 
-        [RequireAccess("Permite excluir uma notificação.")]
+        [RequireAccess("notifications.delete.description")]
         [DeleteEndpoint("{id:long}")]
         public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
         {
@@ -77,7 +78,7 @@ namespace Archon.Api.Controllers
             return Http204();
         }
 
-        [RequireAccess("Permite limpar todas as notificações do usuário atual.")]
+        [RequireAccess("notifications.clearAll.description")]
         [DeleteEndpoint("clear-all")]
         public async Task<IActionResult> ClearAll(CancellationToken cancellationToken)
         {

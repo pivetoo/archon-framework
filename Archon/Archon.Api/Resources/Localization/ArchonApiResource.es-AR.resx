@@ -249,4 +249,29 @@
   <data name="pageLayout.delete.selectAtLeastOne" xml:space="preserve">
     <value>Seleccione al menos un registro para eliminar.</value>
   </data>
+  <data name="audit.area" xml:space="preserve"><value>Audit</value></data>
+  <data name="audit.getByEntity.description" xml:space="preserve"><value>Permite consultar o histórico de auditoria de uma entidade específica.</value></data>
+  <data name="audit.getById.description" xml:space="preserve"><value>Permite consultar os detalhes de um registro específico da auditoria.</value></data>
+  <data name="audit.recent.description" xml:space="preserve"><value>Permite listar os registros recentes de auditoria com filtros.</value></data>
+  <data name="audit.stats.description" xml:space="preserve"><value>Permite consultar estatisticas agregadas dos registros de auditoria.</value></data>
+  <data name="notifications.area" xml:space="preserve"><value>Notifications</value></data>
+  <data name="notifications.clearAll.description" xml:space="preserve"><value>Permite limpar todas as notificações do usuário atual.</value></data>
+  <data name="notifications.create.description" xml:space="preserve"><value>Permite cadastrar uma notificação.</value></data>
+  <data name="notifications.delete.description" xml:space="preserve"><value>Permite excluir uma notificação.</value></data>
+  <data name="notifications.get.description" xml:space="preserve"><value>Permite listar as notificações do usuário atual.</value></data>
+  <data name="notifications.getById.description" xml:space="preserve"><value>Permite consultar uma notificação por id.</value></data>
+  <data name="notifications.getUnreadCount.description" xml:space="preserve"><value>Permite consultar a quantidade de notificações não lidas do usuário atual.</value></data>
+  <data name="notifications.markAllAsRead.description" xml:space="preserve"><value>Permite marcar todas as notificações do usuário atual como lidas.</value></data>
+  <data name="notifications.markAsRead.description" xml:space="preserve"><value>Permite marcar uma notificação como lida.</value></data>
+  <data name="usersManagement.area" xml:space="preserve"><value>Users management</value></data>
+  <data name="usersManagement.create.description" xml:space="preserve"><value>Permite criar usuario no contrato ativo.</value></data>
+  <data name="usersManagement.createRole.description" xml:space="preserve"><value>Permite criar um perfil no contrato ativo.</value></data>
+  <data name="usersManagement.deleteRole.description" xml:space="preserve"><value>Permite excluir um perfil do contrato ativo.</value></data>
+  <data name="usersManagement.getAccessResources.description" xml:space="preserve"><value>Permite listar as permissões disponíveis no contrato ativo.</value></data>
+  <data name="usersManagement.getByCurrentContract.description" xml:space="preserve"><value>Permite listar usuarios do contrato ativo.</value></data>
+  <data name="usersManagement.getRoleById.description" xml:space="preserve"><value>Permite consultar um perfil do contrato ativo.</value></data>
+  <data name="usersManagement.getRoles.description" xml:space="preserve"><value>Permite listar perfis do contrato ativo.</value></data>
+  <data name="usersManagement.setActive.description" xml:space="preserve"><value>Permite ativar/desativar usuario.</value></data>
+  <data name="usersManagement.update.description" xml:space="preserve"><value>Permite atualizar usuario do contrato ativo.</value></data>
+  <data name="usersManagement.updateRole.description" xml:space="preserve"><value>Permite atualizar um perfil do contrato ativo.</value></data>
 </root>

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Archon.Api.Controllers
 {
+    [AccessArea("usersManagement.area")]
     public sealed class UsersManagementController : ApiControllerBase
     {
         private readonly IdentityUsersClient identityUsersClient;
@@ -13,7 +14,7 @@ namespace Archon.Api.Controllers
             this.identityUsersClient = identityUsersClient;
         }
 
-        [RequireAccess("Permite listar usuarios do contrato ativo.")]
+        [RequireAccess("usersManagement.getByCurrentContract.description")]
         [GetEndpoint]
         public async Task<IActionResult> GetByCurrentContract(CancellationToken cancellationToken)
         {
@@ -27,7 +28,7 @@ namespace Archon.Api.Controllers
             return Http200(users);
         }
 
-        [RequireAccess("Permite listar perfis do contrato ativo.")]
+        [RequireAccess("usersManagement.getRoles.description")]
         [GetEndpoint]
         public async Task<IActionResult> GetRoles(CancellationToken cancellationToken)
         {
@@ -41,7 +42,7 @@ namespace Archon.Api.Controllers
             return Http200(roles);
         }
 
-        [RequireAccess("Permite criar usuario no contrato ativo.")]
+        [RequireAccess("usersManagement.create.description")]
         [PostEndpoint]
         public async Task<IActionResult> Create([FromBody] CreateUserBodyRequest request, CancellationToken cancellationToken)
         {
@@ -65,7 +66,7 @@ namespace Archon.Api.Controllers
             return Http201(user, "Usuário criado e vinculado ao contrato ativo.");
         }
 
-        [RequireAccess("Permite alterar perfil do usuario no contrato ativo.")]
+        [RequireAccess("usersManagement.updateRole.description")]
         [PutEndpoint("{userId:long}")]
         public async Task<IActionResult> UpdateRole(long userId, [FromBody] UpdateUserRoleBodyRequest request, CancellationToken cancellationToken)
         {
@@ -79,7 +80,7 @@ namespace Archon.Api.Controllers
             return Http200(user, "Perfil do usuário atualizado no contrato ativo.");
         }
 
-        [RequireAccess("Permite ativar/desativar usuario.")]
+        [RequireAccess("usersManagement.setActive.description")]
         [PutEndpoint("{userId:long}")]
         public async Task<IActionResult> SetActive(long userId, [FromBody] SetActiveBodyRequest request, CancellationToken cancellationToken)
         {
@@ -87,7 +88,7 @@ namespace Archon.Api.Controllers
             return Http200(new { request.IsActive }, request.IsActive ? "Usuário reativado." : "Usuário desativado.");
         }
 
-        [RequireAccess("Permite atualizar usuario do contrato ativo.")]
+        [RequireAccess("usersManagement.update.description")]
         [PutEndpoint("{userId:long}")]
         public async Task<IActionResult> Update(long userId, [FromBody] UpdateUserBodyRequest request, CancellationToken cancellationToken)
         {
@@ -102,7 +103,7 @@ namespace Archon.Api.Controllers
             return Http200(user, "Usuário atualizado.");
         }
 
-        [RequireAccess("Permite consultar um perfil do contrato ativo.")]
+        [RequireAccess("usersManagement.getRoleById.description")]
         [GetEndpoint("{roleId:long}")]
         public async Task<IActionResult> GetRoleById(long roleId, CancellationToken cancellationToken)
         {
@@ -115,7 +116,7 @@ namespace Archon.Api.Controllers
             return Http200(role);
         }
 
-        [RequireAccess("Permite criar um perfil no contrato ativo.")]
+        [RequireAccess("usersManagement.createRole.description")]
         [PostEndpoint]
         public async Task<IActionResult> CreateRole([FromBody] CreateRoleBodyRequest request, CancellationToken cancellationToken)
         {
@@ -139,7 +140,7 @@ namespace Archon.Api.Controllers
             return Http201(role, "Perfil criado.");
         }
 
-        [RequireAccess("Permite atualizar um perfil do contrato ativo.")]
+        [RequireAccess("usersManagement.updateRole.description")]
         [PutEndpoint("{roleId:long}")]
         public async Task<IActionResult> UpdateRole(long roleId, [FromBody] UpdateRoleBodyRequestFull request, CancellationToken cancellationToken)
         {
@@ -156,7 +157,7 @@ namespace Archon.Api.Controllers
             return Http200(role, "Perfil atualizado.");
         }
 
-        [RequireAccess("Permite excluir um perfil do contrato ativo.")]
+        [RequireAccess("usersManagement.deleteRole.description")]
         [DeleteEndpoint("{roleId:long}")]
         public async Task<IActionResult> DeleteRole(long roleId, CancellationToken cancellationToken)
         {
@@ -164,7 +165,7 @@ namespace Archon.Api.Controllers
             return Http200("Perfil excluído.");
         }
 
-        [RequireAccess("Permite listar as permissões disponíveis no contrato ativo.")]
+        [RequireAccess("usersManagement.getAccessResources.description")]
         [GetEndpoint]
         public async Task<IActionResult> GetAccessResources(CancellationToken cancellationToken)
         {
