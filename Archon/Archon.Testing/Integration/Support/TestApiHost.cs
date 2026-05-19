@@ -19,11 +19,11 @@ namespace Archon.Testing.Integration.Support
             builder.WebHost.UseTestServer();
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["TenantDatabases:default:CompanyName"] = "Archon Testing",
-                ["TenantDatabases:default:ApplicationId"] = "archon-testing",
-                ["TenantDatabases:default:ConnectionString"] = "Host=localhost;Database=archon_testing;Username=test;Password=test",
-                ["TenantDatabases:default:DatabaseType"] = "PostgreSql",
-                ["TenantDatabases:default:Schema"] = "public"
+                ["TenantDatabases:FixedTenantId:CompanyName"] = "Archon Testing",
+                ["TenantDatabases:FixedTenantId:ApplicationId"] = "archon-testing",
+                ["TenantDatabases:FixedTenantId:ConnectionString"] = "Host=localhost;Database=archon_testing;Username=test;Password=test",
+                ["TenantDatabases:FixedTenantId:DatabaseType"] = "PostgreSql",
+                ["TenantDatabases:FixedTenantId:Schema"] = "public"
             });
 
             builder.Services.AddArchonApi(builder.Configuration);

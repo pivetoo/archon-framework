@@ -15,6 +15,7 @@ namespace Archon.Testing.Unit.Api.Middlewares
         {
             DefaultHttpContext context = new DefaultHttpContext();
             context.Response.Body = new MemoryStream();
+            context.RequestServices = BuildServiceProvider();
             return context;
         }
 
@@ -34,9 +35,34 @@ namespace Archon.Testing.Unit.Api.Middlewares
         private static IStringLocalizer<ArchonApiResource> CreateLocalizer()
         {
             Mock<IStringLocalizer<ArchonApiResource>> mock = new Mock<IStringLocalizer<ArchonApiResource>>();
-            mock.Setup(l => l[It.IsAny<string>()]).Returns((string key) => new LocalizedString(key, key));
-            mock.Setup(l => l[It.IsAny<string>(), It.IsAny<object[]>()]).Returns((string key, object[] args) => new LocalizedString(key, string.Format(key, args)));
+            mock.Setup(l => l[It.IsAny<string>()]).Returns((string key) => new LocalizedString(key, key, resourceNotFound: LooksLikeRawMessage(key)));
+            mock.Setup(l => l[It.IsAny<string>(), It.IsAny<object[]>()]).Returns((string key, object[] args) => new LocalizedString(key, string.Format(key, args), resourceNotFound: LooksLikeRawMessage(key)));
             return mock.Object;
+        }
+
+        private static bool LooksLikeRawMessage(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) || value.Contains(' ');
+        }
+
+        private static IStringLocalizerFactory CreateLocalizerFactory()
+        {
+            Mock<IStringLocalizerFactory> factory = new Mock<IStringLocalizerFactory>();
+            Mock<IStringLocalizer> localizer = new Mock<IStringLocalizer>();
+            localizer.Setup(l => l[It.IsAny<string>()]).Returns((string key) => new LocalizedString(key, key, resourceNotFound: true));
+            localizer.Setup(l => l[It.IsAny<string>(), It.IsAny<object[]>()]).Returns((string key, object[] args) => new LocalizedString(key, key, resourceNotFound: true));
+            factory.Setup(f => f.Create(It.IsAny<Type>())).Returns(localizer.Object);
+            return factory.Object;
+        }
+
+        private static IServiceProvider BuildServiceProvider()
+        {
+            return new ServiceCollection()
+                .AddSingleton(CreateLocalizer())
+                .AddSingleton(CreateLocalizerFactory())
+                .AddSingleton(new LocalizationCatalogOptions { ResourceTypes = Array.Empty<Type>() })
+                .AddLogging()
+                .BuildServiceProvider();
         }
 
         [Test]
@@ -46,10 +72,6 @@ namespace Archon.Testing.Unit.Api.Middlewares
             bool nextCalled = false;
             RequestDelegate next = (ctx) => { nextCalled = true; return Task.CompletedTask; };
             ExceptionHandlingMiddleware middleware = CreateMiddleware(next);
-            context.RequestServices = new ServiceCollection()
-                .AddSingleton(CreateLocalizer())
-                .AddLogging()
-                .BuildServiceProvider();
 
             await middleware.InvokeAsync(context);
 
@@ -63,10 +85,6 @@ namespace Archon.Testing.Unit.Api.Middlewares
             DefaultHttpContext context = CreateContext();
             RequestDelegate next = (ctx) => throw new UnauthorizedAccessException("auth.unauthorized");
             ExceptionHandlingMiddleware middleware = CreateMiddleware(next);
-            context.RequestServices = new ServiceCollection()
-                .AddSingleton(CreateLocalizer())
-                .AddLogging()
-                .BuildServiceProvider();
 
             await middleware.InvokeAsync(context);
 
@@ -81,10 +99,6 @@ namespace Archon.Testing.Unit.Api.Middlewares
             DefaultHttpContext context = CreateContext();
             RequestDelegate next = (ctx) => throw new KeyNotFoundException("record.notFound");
             ExceptionHandlingMiddleware middleware = CreateMiddleware(next);
-            context.RequestServices = new ServiceCollection()
-                .AddSingleton(CreateLocalizer())
-                .AddLogging()
-                .BuildServiceProvider();
 
             await middleware.InvokeAsync(context);
 
@@ -99,10 +113,6 @@ namespace Archon.Testing.Unit.Api.Middlewares
             DefaultHttpContext context = CreateContext();
             RequestDelegate next = (ctx) => throw new ArgumentException("request.invalid");
             ExceptionHandlingMiddleware middleware = CreateMiddleware(next);
-            context.RequestServices = new ServiceCollection()
-                .AddSingleton(CreateLocalizer())
-                .AddLogging()
-                .BuildServiceProvider();
 
             await middleware.InvokeAsync(context);
 
@@ -115,10 +125,6 @@ namespace Archon.Testing.Unit.Api.Middlewares
             DefaultHttpContext context = CreateContext();
             RequestDelegate next = (ctx) => throw new IntegrityException("error.integrity");
             ExceptionHandlingMiddleware middleware = CreateMiddleware(next);
-            context.RequestServices = new ServiceCollection()
-                .AddSingleton(CreateLocalizer())
-                .AddLogging()
-                .BuildServiceProvider();
 
             await middleware.InvokeAsync(context);
 
@@ -131,10 +137,6 @@ namespace Archon.Testing.Unit.Api.Middlewares
             DefaultHttpContext context = CreateContext();
             RequestDelegate next = (ctx) => throw new Exception("unexpected");
             ExceptionHandlingMiddleware middleware = CreateMiddleware(next);
-            context.RequestServices = new ServiceCollection()
-                .AddSingleton(CreateLocalizer())
-                .AddLogging()
-                .BuildServiceProvider();
 
             await middleware.InvokeAsync(context);
 
@@ -149,10 +151,6 @@ namespace Archon.Testing.Unit.Api.Middlewares
             DefaultHttpContext context = CreateContext();
             RequestDelegate next = (ctx) => throw new InvalidOperationException("request.body.required");
             ExceptionHandlingMiddleware middleware = CreateMiddleware(next);
-            context.RequestServices = new ServiceCollection()
-                .AddSingleton(CreateLocalizer())
-                .AddLogging()
-                .BuildServiceProvider();
 
             await middleware.InvokeAsync(context);
 
@@ -165,10 +163,6 @@ namespace Archon.Testing.Unit.Api.Middlewares
             DefaultHttpContext context = CreateContext();
             RequestDelegate next = (ctx) => throw new InvalidOperationException("NullReference inside service");
             ExceptionHandlingMiddleware middleware = CreateMiddleware(next);
-            context.RequestServices = new ServiceCollection()
-                .AddSingleton(CreateLocalizer())
-                .AddLogging()
-                .BuildServiceProvider();
 
             await middleware.InvokeAsync(context);
 
@@ -181,10 +175,6 @@ namespace Archon.Testing.Unit.Api.Middlewares
             DefaultHttpContext context = CreateContext();
             RequestDelegate next = (ctx) => throw new ArgumentException("validation.failed");
             ExceptionHandlingMiddleware middleware = CreateMiddleware(next);
-            context.RequestServices = new ServiceCollection()
-                .AddSingleton(CreateLocalizer())
-                .AddLogging()
-                .BuildServiceProvider();
 
             await middleware.InvokeAsync(context);
 

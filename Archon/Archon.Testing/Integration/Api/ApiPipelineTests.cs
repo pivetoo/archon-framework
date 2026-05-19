@@ -51,7 +51,7 @@ namespace Archon.Testing.Integration.Api
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(result, Is.Not.Null);
             Assert.That(result!.Data.HasValue, Is.True);
-            Assert.That(result.Data!.Value.GetProperty("tenantId").GetString(), Is.EqualTo("default"));
+            Assert.That(result.Data!.Value.GetProperty("tenantId").GetString(), Is.EqualTo("FixedTenantId"));
         }
 
         [Test]

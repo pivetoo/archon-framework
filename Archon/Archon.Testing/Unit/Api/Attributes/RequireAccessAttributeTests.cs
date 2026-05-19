@@ -211,6 +211,7 @@ namespace Archon.Testing.Unit.Api.Attributes
 
             ServiceCollection services = new ServiceCollection();
             services.AddSingleton(configuration);
+            services.AddMemoryCache();
             services.AddSingleton<ITenantResolver, ConfigurationTenantResolver>();
             services.AddSingleton<ITenantContext, MultiTenantContext>();
             return services.BuildServiceProvider();
