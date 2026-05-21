@@ -5,7 +5,8 @@ namespace Archon.Core.Templating
 {
     public static class TemplateInterpolator
     {
-        private static readonly Regex TemplateRegex = new(@"\{\{(\s*[\w.\-]+\s*)\}\}", RegexOptions.Compiled);
+        private static readonly Regex TemplateRegex = new(@"\{\{(\s*[\w.\-]+(?:\s*\|\s*\w+)?\s*)\}\}", RegexOptions.Compiled);
+        private static readonly JsonSerializerOptions JsonOptions = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
         public static string Interpolate(
             string? template,
@@ -20,13 +21,28 @@ namespace Archon.Core.Templating
 
             return TemplateRegex.Replace(template, match =>
             {
-                string variable = match.Groups[1].Value.Trim();
-                return ResolveVariable(variable, stepVariables, payloadData, connectorAttributes);
+                string expression = match.Groups[1].Value.Trim();
+                (string variable, string? filter) = ParseExpression(expression);
+                return ResolveVariable(variable, filter, stepVariables, payloadData, connectorAttributes);
             });
+        }
+
+        private static (string variable, string? filter) ParseExpression(string expression)
+        {
+            int pipeIndex = expression.IndexOf('|');
+            if (pipeIndex < 0)
+            {
+                return (expression.Trim(), null);
+            }
+
+            string variable = expression[..pipeIndex].Trim();
+            string filter = expression[(pipeIndex + 1)..].Trim();
+            return (variable, filter);
         }
 
         private static string ResolveVariable(
             string variable,
+            string? filter,
             Dictionary<string, object> stepVariables,
             Dictionary<string, object> payloadData,
             Dictionary<string, string> connectorAttributes)
@@ -34,22 +50,32 @@ namespace Archon.Core.Templating
             if (stepVariables.TryGetValue(variable, out object? stepValue) ||
                 TryGetValueIgnoreCase(stepVariables, variable, out stepValue))
             {
-                return ConvertToString(stepValue);
+                return ApplyFilter(stepValue, filter);
             }
 
             object? payloadValue = ResolveDottedPath(payloadData, variable);
             if (payloadValue is not null)
             {
-                return ConvertToString(payloadValue);
+                return ApplyFilter(payloadValue, filter);
             }
 
             if (connectorAttributes.TryGetValue(variable, out string? attributeValue) ||
                 TryGetValueIgnoreCase(connectorAttributes, variable, out attributeValue))
             {
-                return attributeValue ?? string.Empty;
+                return ApplyFilter(attributeValue, filter);
             }
 
-            return string.Empty;
+            return filter == "json" ? "null" : string.Empty;
+        }
+
+        private static string ApplyFilter(object? value, string? filter)
+        {
+            if (filter == "json")
+            {
+                return JsonSerializer.Serialize(value, JsonOptions);
+            }
+
+            return ConvertToString(value);
         }
 
         private static object? ResolveDottedPath(Dictionary<string, object> data, string path)
@@ -77,6 +103,10 @@ namespace Archon.Core.Templating
                         jsonElement.TryGetProperty(part, out JsonElement property))
                     {
                         current = property;
+                    }
+                    else if (jsonElement.ValueKind == JsonValueKind.Array && int.TryParse(part, out int index) && index >= 0 && index < jsonElement.GetArrayLength())
+                    {
+                        current = jsonElement[index];
                     }
                     else
                     {
