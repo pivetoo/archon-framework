@@ -163,6 +163,40 @@ namespace Archon.Infrastructure.IdentityManagement
             }
         }
 
+        public async Task UpdateUserAvatarAsync(long userId, string avatarUrl, CancellationToken ct = default)
+        {
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
+            if (baseUrl is null)
+            {
+                throw new InvalidOperationException("Integration 'identity-management' is not configured.");
+            }
+
+            RestResponse<ApiResponse<object>> response = await restApi.Fetch<ApiResponse<object>>(
+                RestRequest.Put($"{baseUrl}/api/Users/UpdateAvatar/{userId}/avatar", avatarUrl).WithTenantApiKey(tenantId, secret!), ct);
+
+            if (!response.Ok)
+            {
+                throw new HttpRequestException($"IdentityManagement /api/Users/UpdateAvatar/{userId}/avatar returned {response.Status}");
+            }
+        }
+
+        public async Task DeleteUserAvatarAsync(long userId, CancellationToken ct = default)
+        {
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
+            if (baseUrl is null)
+            {
+                throw new InvalidOperationException("Integration 'identity-management' is not configured.");
+            }
+
+            RestResponse<ApiResponse<object>> response = await restApi.Fetch<ApiResponse<object>>(
+                RestRequest.Delete($"{baseUrl}/api/Users/DeleteAvatar/{userId}/avatar").WithTenantApiKey(tenantId, secret!), ct);
+
+            if (!response.Ok)
+            {
+                throw new HttpRequestException($"IdentityManagement /api/Users/DeleteAvatar/{userId}/avatar returned {response.Status}");
+            }
+        }
+
         public async Task<ContractRoleDto?> GetRoleByIdAsync(long roleId, CancellationToken ct = default)
         {
             (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
