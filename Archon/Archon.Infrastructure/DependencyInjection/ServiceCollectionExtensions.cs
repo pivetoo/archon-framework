@@ -249,18 +249,30 @@ namespace Archon.Infrastructure.DependencyInjection
                 return (tenantContext.ConnectionString, tenantContext.DatabaseProvider, tenantContext.Schema);
             }
 
-            KeyValuePair<string, TenantDatabaseOption> fallbackTenant = tenantDatabaseOptions.TenantDatabases
-                .FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Value.ConnectionString));
+            // Nenhum tenant foi resolvido para este escopo. So e seguro assumir um tenant
+            // implicitamente quando ha EXATAMENTE UM configurado (single-tenant / FixedTenant) -
+            // ai nao existe outro tenant a ser contaminado. Com 2+ tenants configurados, assumir o
+            // "primeiro" operaria sobre o tenant ERRADO; por isso falha explicitamente em vez de cair
+            // num fallback silencioso.
+            List<TenantDatabaseOption> configured = tenantDatabaseOptions.TenantDatabases
+                .Select(entry => entry.Value)
+                .Where(value => value is not null && !string.IsNullOrWhiteSpace(value.ConnectionString))
+                .ToList();
 
-            if (!string.IsNullOrWhiteSpace(fallbackTenant.Value?.ConnectionString))
+            if (configured.Count == 1)
             {
-                return (
-                    fallbackTenant.Value.ConnectionString,
-                    fallbackTenant.Value.GetDatabaseProvider(),
-                    fallbackTenant.Value.Schema);
+                TenantDatabaseOption single = configured[0];
+                return (single.ConnectionString, single.GetDatabaseProvider(), single.Schema);
             }
 
-            throw new InvalidOperationException("No tenant connection string was configured for the current request.");
+            if (configured.Count == 0)
+            {
+                throw new InvalidOperationException("No tenant connection string was configured for the current request.");
+            }
+
+            throw new InvalidOperationException(
+                "No tenant was resolved for the current scope and multiple tenants are configured. " +
+                "Refusing to fall back to an arbitrary tenant to avoid operating on the wrong tenant's data.");
         }
 
         private static (string connectionString, DatabaseProvider databaseProvider) GetHangfireStorage(TenantDatabaseOptions tenantDatabaseOptions)
