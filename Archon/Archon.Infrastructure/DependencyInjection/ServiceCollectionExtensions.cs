@@ -75,6 +75,9 @@ namespace Archon.Infrastructure.DependencyInjection
                 IDomainEventDispatcher? domainEventDispatcher = provider.GetService<IDomainEventDispatcher>();
 
                 (string connectionString, DatabaseProvider databaseProvider, string? schema) = ResolveCurrentTenant(tenantContext, tenantDatabaseOptions);
+
+                provider.GetService<TenantMigrationGuard>()?.EnsureMigrated(connectionString, databaseProvider, schema);
+
                 DbContextOptions<ArchonDbContext> options = DbContextOptionsFactory.Create(connectionString, databaseProvider);
 
                 return new ArchonDbContext(options, modelAssemblyRegistry, currentUser, tenantContext, domainEventDispatcher, schema);
@@ -203,6 +206,8 @@ namespace Archon.Infrastructure.DependencyInjection
                     Console.WriteLine($"Migration failed for tenant {name}: {exception.Message}");
                 }
             }
+
+            services.AddSingleton(new TenantMigrationGuard(migrationAssemblies));
 
             return services;
         }
