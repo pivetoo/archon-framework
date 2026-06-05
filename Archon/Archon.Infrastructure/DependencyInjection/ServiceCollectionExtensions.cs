@@ -76,8 +76,6 @@ namespace Archon.Infrastructure.DependencyInjection
 
                 (string connectionString, DatabaseProvider databaseProvider, string? schema) = ResolveCurrentTenant(tenantContext, tenantDatabaseOptions);
 
-                provider.GetService<TenantMigrationGuard>()?.EnsureMigrated(connectionString, databaseProvider, schema);
-
                 DbContextOptions<ArchonDbContext> options = DbContextOptionsFactory.Create(connectionString, databaseProvider);
 
                 return new ArchonDbContext(options, modelAssemblyRegistry, currentUser, tenantContext, domainEventDispatcher, schema);
@@ -86,6 +84,7 @@ namespace Archon.Infrastructure.DependencyInjection
             services.AddScoped<DbContext>(provider => provider.GetRequiredService<ArchonDbContext>());
             services.AddScoped<IAuditService, AuditService>();
             services.AddScoped<IIntegrationService, IntegrationService>();
+            services.AddScoped<ITenantBootstrapService, TenantBootstrapService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<AuditService>();
             services.AddScoped(typeof(ICrudService<>), typeof(CrudService<>));
@@ -207,7 +206,7 @@ namespace Archon.Infrastructure.DependencyInjection
                 }
             }
 
-            services.AddSingleton(new TenantMigrationGuard(migrationAssemblies));
+            services.AddSingleton(new TenantMigrationRunner(schema, migrationAssemblies));
 
             return services;
         }
@@ -247,7 +246,7 @@ namespace Archon.Infrastructure.DependencyInjection
                 .ToList();
         }
 
-        private static (string connectionString, DatabaseProvider databaseProvider, string? schema) ResolveCurrentTenant(ITenantContext tenantContext, TenantDatabaseOptions tenantDatabaseOptions)
+        internal static (string connectionString, DatabaseProvider databaseProvider, string? schema) ResolveCurrentTenant(ITenantContext tenantContext, TenantDatabaseOptions tenantDatabaseOptions)
         {
             if (!string.IsNullOrWhiteSpace(tenantContext.ConnectionString))
             {
