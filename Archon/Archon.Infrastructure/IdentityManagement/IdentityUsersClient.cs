@@ -62,6 +62,25 @@ namespace Archon.Infrastructure.IdentityManagement
             return response.Data?.Data;
         }
 
+        public async Task<List<ContractUserDto>> GetAdminUsersAsync(CancellationToken ct = default)
+        {
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
+            if (baseUrl is null)
+            {
+                throw new InvalidOperationException("Integration 'identity-management' is not configured.");
+            }
+
+            RestResponse<ApiResponse<List<ContractUserDto>>> response = await restApi.Fetch<ApiResponse<List<ContractUserDto>>>(
+                RestRequest.Get($"{baseUrl}/api/Users/GetAdmins").WithTenantApiKey(tenantId, secret!), ct);
+
+            if (!response.Ok)
+            {
+                throw new HttpRequestException($"IdentityManagement /api/Users/GetAdmins returned {response.Status}");
+            }
+
+            return response.Data?.Data ?? [];
+        }
+
         public async Task<List<ContractUserDto>> GetUsersByContractAsync(long contractId, CancellationToken ct = default)
         {
             (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
