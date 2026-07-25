@@ -4,6 +4,7 @@ using Archon.Application.Abstractions;
 using Archon.Application.Events;
 using Archon.Application.MultiTenancy;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Reflection;
 
 namespace Archon.Infrastructure.Persistence.EF
@@ -93,15 +94,56 @@ namespace Archon.Infrastructure.Persistence.EF
             // auditoria de insercao.
             List<ArchonAuditManager.PendingAuditEntry> pendingAuditEntries = auditManager.CapturePendingAuditEntries();
 
-            int result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            // A auditoria precisa de um SEGUNDO save (o Id da entidade inserida so existe apos o
+            // primeiro). Sem transacao envolvendo os dois, falha ao gravar a auditoria deixava a
+            // mudanca aplicada e sem registro. Abre transacao propria so quando o chamador ainda nao
+            // abriu uma — no caminho do CrudService ela ja existe. Provider nao relacional (InMemory,
+            // usado nos testes) nao suporta transacao, entao fica de fora.
+            bool precisaDeTransacaoPropria = pendingAuditEntries.Count > 0
+                && Database.CurrentTransaction is null
+                && Database.IsRelational();
 
-            List<AuditEntry> auditEntries = ArchonAuditManager.MaterializeAuditEntries(pendingAuditEntries);
+            IDbContextTransaction? transacao = precisaDeTransacaoPropria
+                ? await Database.BeginTransactionAsync(cancellationToken)
+                : null;
 
-            if (auditEntries.Count > 0)
+            int result;
+
+            try
             {
-                await PersistAuditEntriesAsync(auditEntries, cancellationToken);
+                result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+                List<AuditEntry> auditEntries = ArchonAuditManager.MaterializeAuditEntries(pendingAuditEntries);
+
+                if (auditEntries.Count > 0)
+                {
+                    await PersistAuditEntriesAsync(auditEntries, cancellationToken);
+                }
+
+                if (transacao is not null)
+                {
+                    await transacao.CommitAsync(cancellationToken);
+                }
+            }
+            catch
+            {
+                if (transacao is not null)
+                {
+                    await transacao.RollbackAsync(cancellationToken);
+                }
+
+                throw;
+            }
+            finally
+            {
+                if (transacao is not null)
+                {
+                    await transacao.DisposeAsync();
+                }
             }
 
+            // Fora da transacao de proposito: handler de evento nao deve poder reverter a escrita ja
+            // confirmada, e eventos sao despachados depois do commit para verem estado consistente.
             if (domainEvents.Count > 0 && domainEventDispatcher is not null)
             {
                 await domainEventDispatcher.DispatchAsync(domainEvents, cancellationToken);
