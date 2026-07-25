@@ -2,6 +2,7 @@ using Archon.Application.Integrations;
 using Archon.Application.MultiTenancy;
 using Archon.Application.Services;
 using Archon.Core.ValueObjects;
+using Archon.Infrastructure.DependencyInjection;
 using Archon.Infrastructure.MultiTenancy;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
@@ -130,25 +131,16 @@ namespace Archon.Infrastructure.Integrations
             return parameters;
         }
 
+        /// <summary>
+        /// Delega para a MESMA politica do resto do framework. Antes daqui havia uma copia que, sem
+        /// tenant resolvido, pegava o PRIMEIRO tenant configurado — exatamente o que
+        /// <see cref="ServiceCollectionExtensions.ResolveCurrentTenant"/> se recusa a fazer. Como a
+        /// tabela `integrations` guarda credenciais, esse fallback lia credencial de outro cliente
+        /// assim que existisse mais de um tenant.
+        /// </summary>
         private (string connectionString, DatabaseProvider databaseProvider, string? schema) ResolveTenant()
         {
-            if (!string.IsNullOrWhiteSpace(tenantContext.ConnectionString))
-            {
-                return (tenantContext.ConnectionString, tenantContext.DatabaseProvider, tenantContext.Schema);
-            }
-
-            KeyValuePair<string, TenantDatabaseOption> fallbackTenant = tenantDatabaseOptions.TenantDatabases
-                .FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Value.ConnectionString));
-
-            if (!string.IsNullOrWhiteSpace(fallbackTenant.Value?.ConnectionString))
-            {
-                return (
-                    fallbackTenant.Value.ConnectionString,
-                    fallbackTenant.Value.GetDatabaseProvider(),
-                    fallbackTenant.Value.Schema);
-            }
-
-            return (string.Empty, DatabaseProvider.PostgreSql, null);
+            return ServiceCollectionExtensions.ResolveCurrentTenant(tenantContext, tenantDatabaseOptions);
         }
 
         private static DbConnection CreateConnection(string connectionString, DatabaseProvider databaseProvider)
