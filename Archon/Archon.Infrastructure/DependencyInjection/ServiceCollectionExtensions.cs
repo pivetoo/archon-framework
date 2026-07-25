@@ -198,6 +198,8 @@ namespace Archon.Infrastructure.DependencyInjection
 
             List<(string name, string connectionString, DatabaseProvider databaseProvider)> connections = GetMigrationConnections(configuration);
 
+            List<string> failures = [];
+
             foreach ((string name, string connectionString, DatabaseProvider databaseProvider) in connections)
             {
                 Console.WriteLine($"Running migrations for tenant: {name}");
@@ -208,8 +210,20 @@ namespace Archon.Infrastructure.DependencyInjection
                 }
                 catch (Exception exception)
                 {
+                    // Nao interrompe o laco: tentar todos os tenants faz o operador ver TODOS os
+                    // problemas de uma vez, em vez de descobrir um por deploy.
                     Console.WriteLine($"Migration failed for tenant {name}: {exception.Message}");
+                    failures.Add($"{name}: {exception.Message}");
                 }
+            }
+
+            // Falhar o startup e proposital. Antes daqui a excecao era apenas impressa e a aplicacao
+            // subia contra schema parcialmente migrado — o que corrompe dado em silencio. Aplicacao
+            // fora do ar e visivel na hora; schema incompleto so aparece quando o estrago ja aconteceu.
+            if (failures.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Migration failed for {failures.Count} tenant(s) and the application will not start: {string.Join(" | ", failures)}");
             }
 
             return services;
