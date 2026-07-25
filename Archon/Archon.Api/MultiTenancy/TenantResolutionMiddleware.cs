@@ -1,10 +1,18 @@
 using Archon.Application.MultiTenancy;
 using Archon.Infrastructure.MultiTenancy;
 using Microsoft.Extensions.Configuration;
-using System.Text.Json;
 
 namespace Archon.Api.MultiTenancy
 {
+    /// <summary>
+    /// Resolve o tenant do request a partir de claim JA VALIDADA. Precisa ser registrado DEPOIS de
+    /// <c>UseAuthentication()</c>, via <c>UseArchonTenantResolution()</c>.
+    ///
+    /// Antes este middleware rodava antes da autenticacao e, sem claims disponiveis, decodificava o
+    /// payload do Bearer na mao para ler `tenant_id` — sem verificar a assinatura. Como o tenant define
+    /// a connection string do request, um token forjado apontando outro tenant fazia rota anonima operar
+    /// no banco alheio. Ler apenas claim validada elimina isso.
+    /// </summary>
     public sealed class TenantResolutionMiddleware
     {
         private readonly RequestDelegate next;
@@ -24,13 +32,13 @@ namespace Archon.Api.MultiTenancy
             string? tenantId = isFixedMode
                 ? FixedTenantKey
                 : context.User.FindFirst("tenant_id")?.Value
-                    ?? context.User.FindFirst("contract_id")?.Value
-                    ?? TryExtractTenantIdFromJwt(context);
+                    ?? context.User.FindFirst("contract_id")?.Value;
 
             if (string.IsNullOrWhiteSpace(tenantId))
             {
-                // Request sem tenant_id no JWT (ex.: server-to-server com X-Api-Key/Basic Auth, ou endpoints anonimos).
-                // Deixa o pipeline seguir; o RequireAccessAttribute popula o tenant depois quando aplicavel.
+                // Sem claim validada de tenant: server-to-server com X-Api-Key/Basic Auth, ou rota anonima.
+                // O RequireAccessAttribute popula o tenant no primeiro caso; rota publica resolve pelo
+                // proprio token de rota, no middleware de tenant publico da aplicacao consumidora.
                 await next(context);
                 return;
             }
@@ -54,56 +62,6 @@ namespace Archon.Api.MultiTenancy
             context.Items["TenantConnectionString"] = tenant.ConnectionString;
 
             await next(context);
-        }
-
-        private static string? TryExtractTenantIdFromJwt(HttpContext context)
-        {
-            string? authorizationHeader = context.Request.Headers.Authorization.FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(authorizationHeader) || !authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
-            string token = authorizationHeader["Bearer ".Length..].Trim();
-            string[] segments = token.Split('.');
-            if (segments.Length < 2)
-            {
-                return null;
-            }
-
-            try
-            {
-                byte[] payloadBytes = DecodeBase64Url(segments[1]);
-                using JsonDocument document = JsonDocument.Parse(payloadBytes);
-
-                if (document.RootElement.TryGetProperty("tenant_id", out JsonElement tenantIdElement))
-                {
-                    return tenantIdElement.GetString();
-                }
-
-                if (document.RootElement.TryGetProperty("contract_id", out JsonElement contractIdElement))
-                {
-                    return contractIdElement.GetString();
-                }
-
-                return null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private static byte[] DecodeBase64Url(string value)
-        {
-            string normalized = value.Replace('-', '+').Replace('_', '/');
-            int padding = 4 - normalized.Length % 4;
-            if (padding is > 0 and < 4)
-            {
-                normalized = normalized.PadRight(normalized.Length + padding, '=');
-            }
-
-            return Convert.FromBase64String(normalized);
         }
     }
 }

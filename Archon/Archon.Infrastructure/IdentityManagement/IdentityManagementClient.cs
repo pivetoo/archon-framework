@@ -33,7 +33,19 @@ namespace Archon.Infrastructure.IdentityManagement
 
         public async Task<OpenIdConnectConfigurationInfo?> GetOpenIdConfigurationAsync(CancellationToken ct = default)
         {
-            string? baseUrl = await ResolveBaseUrlAsync(ct);
+            return await GetOpenIdConfigurationAsync(null, ct);
+        }
+
+        /// <summary>
+        /// Descoberta OIDC com autoridade explicita. Passando <paramref name="authority"/>, a busca NAO
+        /// toca no banco do tenant — e o que permite validar o token antes de resolver o tenant.
+        /// </summary>
+        public async Task<OpenIdConnectConfigurationInfo?> GetOpenIdConfigurationAsync(string? authority, CancellationToken ct = default)
+        {
+            string? baseUrl = !string.IsNullOrWhiteSpace(authority)
+                ? authority.TrimEnd('/')
+                : await ResolveBaseUrlAsync(ct);
+
             if (baseUrl is null)
             {
                 return null;
@@ -63,7 +75,12 @@ namespace Archon.Infrastructure.IdentityManagement
 
         public async Task<IReadOnlyCollection<SecurityKey>> GetSigningKeysAsync(CancellationToken ct = default)
         {
-            OpenIdConnectConfigurationInfo? config = await GetOpenIdConfigurationAsync(ct);
+            return await GetSigningKeysAsync(null, ct);
+        }
+
+        public async Task<IReadOnlyCollection<SecurityKey>> GetSigningKeysAsync(string? authority, CancellationToken ct = default)
+        {
+            OpenIdConnectConfigurationInfo? config = await GetOpenIdConfigurationAsync(authority, ct);
             if (config is null || string.IsNullOrWhiteSpace(config.JwksUri))
             {
                 return [];

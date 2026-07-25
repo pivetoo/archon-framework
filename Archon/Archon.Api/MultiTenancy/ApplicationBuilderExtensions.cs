@@ -13,9 +13,18 @@ namespace Archon.Api.MultiTenancy
         {
             app.UseRequestLocalization();
             app.UseMiddleware<ExceptionHandlingMiddleware>();
-            app.UseMiddleware<TenantResolutionMiddleware>();
 
             return app;
+        }
+
+        /// <summary>
+        /// Resolucao de tenant a partir de claim validada. Registrar DEPOIS de <c>UseAuthentication()</c>.
+        /// Ficava dentro de <c>UseArchonApi()</c>, que roda antes da autenticacao — e por isso o middleware
+        /// era obrigado a ler o `tenant_id` de um JWT sem assinatura verificada.
+        /// </summary>
+        public static IApplicationBuilder UseArchonTenantResolution(this IApplicationBuilder app)
+        {
+            return app.UseMiddleware<TenantResolutionMiddleware>();
         }
 
         public static IApplicationBuilder UseSessionValidation(this IApplicationBuilder app)

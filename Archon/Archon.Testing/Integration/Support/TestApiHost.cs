@@ -32,6 +32,10 @@ namespace Archon.Testing.Integration.Support
 
             WebApplication app = builder.Build();
             app.UseArchonApi();
+            // Espelha a ordem real do pipeline: a resolucao de tenant vem depois da autenticacao, para
+            // ler apenas claim validada. O host de teste roda em modo FixedTenantId, que nao depende de
+            // claim, mas o registro precisa existir na mesma posicao.
+            app.UseArchonTenantResolution();
             app.MapControllers();
 
             await app.StartAsync();
