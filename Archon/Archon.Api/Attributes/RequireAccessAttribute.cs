@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace Archon.Api.Attributes
 {
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-    public sealed class RequireAccessAttribute : Attribute, IAuthorizationFilter
+    public sealed class RequireAccessAttribute : Attribute, IAsyncAuthorizationFilter
     {
         public string Description { get; }
 
@@ -19,7 +19,10 @@ namespace Archon.Api.Attributes
             Description = description?.Trim() ?? string.Empty;
         }
 
-        public void OnAuthorization(AuthorizationFilterContext context)
+        // IAsyncAuthorizationFilter, e nao IAuthorizationFilter: a resolucao de tenant por chave e
+        // assincrona, e o filtro sincrono obrigava a bloquear com .GetAwaiter().GetResult() a cada
+        // request nao autenticado — sob carga isso consome thread do pool sem necessidade.
+        public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
             ClaimsPrincipal user = context.HttpContext.User;
 
@@ -29,7 +32,7 @@ namespace Archon.Api.Attributes
                 return;
             }
 
-            AuthorizeApiKey(context);
+            await AuthorizeApiKeyAsync(context);
         }
 
         private static void AuthorizeUser(AuthorizationFilterContext context, ClaimsPrincipal user)
@@ -54,7 +57,7 @@ namespace Archon.Api.Attributes
             context.Result = new ForbidResult();
         }
 
-        private static void AuthorizeApiKey(AuthorizationFilterContext context)
+        private static async Task AuthorizeApiKeyAsync(AuthorizationFilterContext context)
         {
             if (context.HttpContext.RequestServices is null)
             {
@@ -63,8 +66,8 @@ namespace Archon.Api.Attributes
             }
 
             ITenantResolver tenantResolver = context.HttpContext.RequestServices.GetRequiredService<ITenantResolver>();
-            TenantInfo? tenant = ResolveByBasicAuth(context.HttpContext.Request, tenantResolver)
-                ?? ResolveByApiKeyHeader(context.HttpContext.Request, tenantResolver);
+            TenantInfo? tenant = await ResolveByBasicAuthAsync(context.HttpContext.Request, tenantResolver)
+                ?? await ResolveByApiKeyHeaderAsync(context.HttpContext.Request, tenantResolver);
 
             if (tenant is null)
             {
@@ -75,7 +78,7 @@ namespace Archon.Api.Attributes
             SetTenantContext(context, tenant);
         }
 
-        private static TenantInfo? ResolveByBasicAuth(HttpRequest request, ITenantResolver tenantResolver)
+        private static async Task<TenantInfo?> ResolveByBasicAuthAsync(HttpRequest request, ITenantResolver tenantResolver)
         {
             string? authorization = request.Headers.Authorization.FirstOrDefault();
             if (string.IsNullOrWhiteSpace(authorization))
@@ -114,10 +117,10 @@ namespace Archon.Api.Attributes
             string tenantId = credentials[..separator];
             string apiKey = credentials[(separator + 1)..];
 
-            return tenantResolver.ResolveByTenantAndApiKeyAsync(tenantId, apiKey).GetAwaiter().GetResult();
+            return await tenantResolver.ResolveByTenantAndApiKeyAsync(tenantId, apiKey);
         }
 
-        private static TenantInfo? ResolveByApiKeyHeader(HttpRequest request, ITenantResolver tenantResolver)
+        private static async Task<TenantInfo?> ResolveByApiKeyHeaderAsync(HttpRequest request, ITenantResolver tenantResolver)
         {
             string? providedApiKey = request.Headers["X-Api-Key"].FirstOrDefault();
 
@@ -126,7 +129,7 @@ namespace Archon.Api.Attributes
                 return null;
             }
 
-            return tenantResolver.ResolveByApiKeyAsync(providedApiKey).GetAwaiter().GetResult();
+            return await tenantResolver.ResolveByApiKeyAsync(providedApiKey);
         }
 
         private static void SetTenantContext(AuthorizationFilterContext context, TenantInfo tenant)

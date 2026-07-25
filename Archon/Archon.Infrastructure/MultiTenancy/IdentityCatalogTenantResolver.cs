@@ -5,22 +5,28 @@ using Archon.Application.MultiTenancy;
 using Archon.Core.ValueObjects;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Archon.Infrastructure.MultiTenancy
 {
     public sealed class IdentityCatalogTenantResolver : ITenantResolver
     {
-        private readonly IdentityCatalogClient catalogClient;
+        // IServiceScopeFactory, e nao o cliente direto: este resolver e SINGLETON, e
+        // AddHttpClient<IdentityCatalogClient>() o registra como transiente. Injetar o cliente
+        // prendia o HttpClient dele para sempre — o handler nunca reciclava e mudanca de DNS do
+        // emissor so era percebida ao reiniciar o processo. Resolver por escopo devolve o controle
+        // do ciclo de vida ao IHttpClientFactory.
+        private readonly IServiceScopeFactory scopeFactory;
         private readonly ConfigurationTenantResolver configurationFallback;
         private readonly IMemoryCache cache;
         private readonly IdentityCatalogOptions options;
         private readonly string currentApplicationId;
         private readonly ConcurrentDictionary<string, SemaphoreSlim> locks = new(StringComparer.OrdinalIgnoreCase);
 
-        public IdentityCatalogTenantResolver(IdentityCatalogClient catalogClient, ConfigurationTenantResolver configurationFallback, IMemoryCache cache, IOptions<IdentityCatalogOptions> options, IConfiguration configuration)
+        public IdentityCatalogTenantResolver(IServiceScopeFactory scopeFactory, ConfigurationTenantResolver configurationFallback, IMemoryCache cache, IOptions<IdentityCatalogOptions> options, IConfiguration configuration)
         {
-            this.catalogClient = catalogClient;
+            this.scopeFactory = scopeFactory;
             this.configurationFallback = configurationFallback;
             this.cache = cache;
             this.options = options.Value;
@@ -128,6 +134,8 @@ namespace Archon.Infrastructure.MultiTenancy
 
             try
             {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                IdentityCatalogClient catalogClient = scope.ServiceProvider.GetRequiredService<IdentityCatalogClient>();
                 TenantResolutionPayload? payload = await catalogClient.ResolveAsync(tenantId.Trim(), currentApplicationId, cancellationToken);
                 return ToTenantInfo(payload);
             }
@@ -146,6 +154,8 @@ namespace Archon.Infrastructure.MultiTenancy
 
             try
             {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                IdentityCatalogClient catalogClient = scope.ServiceProvider.GetRequiredService<IdentityCatalogClient>();
                 TenantResolutionPayload? payload = await catalogClient.ResolveByApiKeyAsync(apiKey, currentApplicationId, cancellationToken);
                 return ToTenantInfo(payload);
             }

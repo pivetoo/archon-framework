@@ -23,7 +23,7 @@ namespace Archon.Infrastructure.RestApi
             if (request.Body is not null)
                 message.Content = JsonContent.Create(request.Body, options: JsonOptions);
 
-            HttpResponseMessage response = await http.SendAsync(message, ct);
+            using HttpResponseMessage response = await http.SendAsync(message, ct);
             string body = await response.Content.ReadAsStringAsync(ct);
 
             return new RestResponse<T>
@@ -44,7 +44,7 @@ namespace Archon.Infrastructure.RestApi
             if (request.Body is not null)
                 message.Content = JsonContent.Create(request.Body, options: JsonOptions);
 
-            HttpResponseMessage response = await http.SendAsync(message, ct);
+            using HttpResponseMessage response = await http.SendAsync(message, ct);
             string body = await response.Content.ReadAsStringAsync(ct);
 
             return new RestResponse<string>

@@ -41,9 +41,5 @@ namespace Archon.Infrastructure.RestApi
 
         public RestRequest WithTenantApiKey(string? tenantId, string apiKey)
             => string.IsNullOrWhiteSpace(tenantId) ? WithApiKey(apiKey) : WithBasicAuth(tenantId, apiKey);
-
-        [Obsolete("Use WithApiKey. Mantido apenas para compatibilidade durante a transicao.")]
-        public RestRequest WithSecret(string secret)
-            => WithApiKey(secret);
     }
 }

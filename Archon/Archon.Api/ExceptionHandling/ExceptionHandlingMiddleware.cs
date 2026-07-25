@@ -34,38 +34,38 @@ namespace Archon.Api.ExceptionHandling
             {
                 logger.LogInformation("404 Not Found {Method} {Path} traceId={TraceId} key={Key}",
                     context.Request.Method, context.Request.Path, traceId, exception.Message);
-                await WriteErrorAsync(context, StatusCodes.Status404NotFound, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message, exception.MessageArgs));
+                await WriteErrorAsync(context, StatusCodes.Status404NotFound, ResolveDomainMessage(archonLocalizer, localizerFactory, catalog, logger, exception.Message, exception.MessageArgs), logger);
             }
             catch (ConflictException exception)
             {
                 logger.LogWarning("409 Conflict {Method} {Path} traceId={TraceId} key={Key}",
                     context.Request.Method, context.Request.Path, traceId, exception.Message);
-                await WriteErrorAsync(context, StatusCodes.Status409Conflict, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message, exception.MessageArgs));
+                await WriteErrorAsync(context, StatusCodes.Status409Conflict, ResolveDomainMessage(archonLocalizer, localizerFactory, catalog, logger, exception.Message, exception.MessageArgs), logger);
             }
             catch (ForbiddenException exception)
             {
                 logger.LogWarning("403 Forbidden {Method} {Path} traceId={TraceId} key={Key}",
                     context.Request.Method, context.Request.Path, traceId, exception.Message);
-                await WriteErrorAsync(context, StatusCodes.Status403Forbidden, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message, exception.MessageArgs));
+                await WriteErrorAsync(context, StatusCodes.Status403Forbidden, ResolveDomainMessage(archonLocalizer, localizerFactory, catalog, logger, exception.Message, exception.MessageArgs), logger);
             }
             catch (BusinessRuleException exception)
             {
                 logger.LogInformation("400 Business Rule {Method} {Path} traceId={TraceId} key={Key}",
                     context.Request.Method, context.Request.Path, traceId, exception.Message);
-                await WriteErrorAsync(context, StatusCodes.Status400BadRequest, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message, exception.MessageArgs));
+                await WriteErrorAsync(context, StatusCodes.Status400BadRequest, ResolveDomainMessage(archonLocalizer, localizerFactory, catalog, logger, exception.Message, exception.MessageArgs), logger);
             }
             // ============ Exceptions legadas (compatibilidade) ============
             catch (UnauthorizedAccessException exception)
             {
                 logger.LogWarning(exception, "401 Unauthorized {Method} {Path} traceId={TraceId} message={Message}",
                     context.Request.Method, context.Request.Path, traceId, exception.Message);
-                await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
+                await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message), logger);
             }
             catch (KeyNotFoundException exception)
             {
                 logger.LogInformation("404 Not Found {Method} {Path} traceId={TraceId} message={Message}",
                     context.Request.Method, context.Request.Path, traceId, exception.Message);
-                await WriteErrorAsync(context, StatusCodes.Status404NotFound, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
+                await WriteErrorAsync(context, StatusCodes.Status404NotFound, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message), logger);
             }
             catch (InvalidOperationException exception)
             {
@@ -73,32 +73,32 @@ namespace Archon.Api.ExceptionHandling
                 {
                     logger.LogInformation("400 Bad Request {Method} {Path} traceId={TraceId} key={Key}",
                         context.Request.Method, context.Request.Path, traceId, exception.Message);
-                    await WriteErrorAsync(context, StatusCodes.Status400BadRequest, resolved);
+                    await WriteErrorAsync(context, StatusCodes.Status400BadRequest, resolved, logger);
                 }
                 else
                 {
                     logger.LogError(exception, "500 Internal Server Error {Method} {Path} traceId={TraceId}",
                         context.Request.Method, context.Request.Path, traceId);
-                    await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, archonLocalizer["error.unexpected"]);
+                    await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, archonLocalizer["error.unexpected"], logger);
                 }
             }
             catch (ArgumentException exception)
             {
                 logger.LogWarning(exception, "400 Bad Request (ArgumentException) {Method} {Path} traceId={TraceId} message={Message}",
                     context.Request.Method, context.Request.Path, traceId, exception.Message);
-                await WriteErrorAsync(context, StatusCodes.Status400BadRequest, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
+                await WriteErrorAsync(context, StatusCodes.Status400BadRequest, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message), logger);
             }
             catch (IntegrityException exception)
             {
                 logger.LogWarning(exception, "409 Conflict {Method} {Path} traceId={TraceId} message={Message}",
                     context.Request.Method, context.Request.Path, traceId, exception.Message);
-                await WriteErrorAsync(context, StatusCodes.Status409Conflict, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message));
+                await WriteErrorAsync(context, StatusCodes.Status409Conflict, ResolveMessage(archonLocalizer, localizerFactory, catalog, exception.Message), logger);
             }
             catch (Exception exception)
             {
                 logger.LogError(exception, "500 Internal Server Error {Method} {Path} traceId={TraceId}",
                     context.Request.Method, context.Request.Path, traceId);
-                await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, archonLocalizer["error.unexpected"]);
+                await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, archonLocalizer["error.unexpected"], logger);
             }
         }
 
@@ -155,8 +155,46 @@ namespace Archon.Api.ExceptionHandling
             return resolved;
         }
 
-        private static Task WriteErrorAsync(HttpContext context, int statusCode, string message)
+        /// <summary>
+        /// Igual ao <see cref="ResolveMessage"/>, mas para excecoes de dominio, cuja Message e uma chave
+        /// de localizacao por contrato. Chave que nao resolve e defeito de catalogo: o cliente recebia a
+        /// chave crua (ex.: `proposal.send.approvalRequired`) como mensagem de erro. Agora recebe a
+        /// mensagem generica e a chave faltante vai para o log, que e onde ela conserta alguem.
+        /// </summary>
+        private static string ResolveDomainMessage(
+            IStringLocalizer<ArchonApiResource> archonLocalizer,
+            IStringLocalizerFactory factory,
+            LocalizationCatalogOptions catalog,
+            ILogger logger,
+            string message,
+            object[]? args = null)
         {
+            if (TryResolveMessage(archonLocalizer, factory, catalog, message, args, out string resolved))
+            {
+                return resolved;
+            }
+
+            logger.LogWarning(
+                "Chave de localizacao ausente no catalogo: {Key}. O cliente recebeu a mensagem generica.",
+                message);
+
+            return archonLocalizer["error.unexpected.short"];
+        }
+
+        private static Task WriteErrorAsync(HttpContext context, int statusCode, string message, ILogger logger)
+        {
+            // Excecao lancada depois que a resposta ja comecou (streaming, download) nao permite trocar
+            // status nem corpo — tentar produz uma segunda excecao dentro do proprio middleware de erro.
+            if (context.Response.HasStarted)
+            {
+                logger.LogError(
+                    "Excecao apos o inicio da resposta em {Method} {Path}; nao foi possivel escrever o erro.",
+                    context.Request.Method,
+                    context.Request.Path);
+
+                return Task.CompletedTask;
+            }
+
             context.Response.StatusCode = statusCode;
             context.Response.ContentType = "application/json";
 

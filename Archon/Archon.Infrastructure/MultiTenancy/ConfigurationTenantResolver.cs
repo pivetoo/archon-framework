@@ -101,7 +101,11 @@ namespace Archon.Infrastructure.MultiTenancy
             foreach (IConfigurationSection tenantSection in tenantDatabasesSection.GetChildren())
             {
                 string? configuredApiKey = tenantSection["ApiKey"];
-                if (string.Equals(configuredApiKey, normalizedApiKey, StringComparison.Ordinal))
+
+                // Tempo constante, igual ao caminho tenant+chave (ResolveByTenantAndApiKeyAsync).
+                // `string.Equals` retorna assim que acha diferenca, entao o tempo de resposta varia com
+                // quantos caracteres iniciais o atacante acertou.
+                if (IsApiKeyMatch(configuredApiKey, normalizedApiKey))
                 {
                     TenantInfo? tenant = CreateTenantInfo(tenantSection);
                     if (tenant is not null)
@@ -114,6 +118,18 @@ namespace Archon.Infrastructure.MultiTenancy
             }
 
             return Task.FromResult<TenantInfo?>(null);
+        }
+
+        private static bool IsApiKeyMatch(string? configuredApiKey, string providedApiKey)
+        {
+            if (string.IsNullOrWhiteSpace(configuredApiKey))
+            {
+                return false;
+            }
+
+            return CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(configuredApiKey),
+                Encoding.UTF8.GetBytes(providedApiKey));
         }
 
         private TenantInfo? ResolveFromConfiguration(string? tenantId)

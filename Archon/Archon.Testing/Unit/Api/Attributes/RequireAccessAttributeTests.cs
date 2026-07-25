@@ -39,18 +39,18 @@ namespace Archon.Testing.Unit.Api.Attributes
         }
 
         [Test]
-        public void OnAuthorization_ShouldAllow_AuthenticatedWithPermission()
+        public async Task OnAuthorization_ShouldAllow_AuthenticatedWithPermission()
         {
             AuthorizationFilterContext context = CreateContext("permission", "test.action");
             RequireAccessAttribute attribute = new RequireAccessAttribute();
 
-            attribute.OnAuthorization(context);
+            await attribute.OnAuthorizationAsync(context);
 
             Assert.That(context.Result, Is.Null);
         }
 
         [Test]
-        public void OnAuthorization_ShouldAllow_UnauthenticatedWithValidApiKeyAndResolveTenant()
+        public async Task OnAuthorization_ShouldAllow_UnauthenticatedWithValidApiKeyAndResolveTenant()
         {
             DefaultHttpContext httpContext = new DefaultHttpContext();
             httpContext.Request.Headers["X-Api-Key"] = "tenant1-secret";
@@ -68,14 +68,14 @@ namespace Archon.Testing.Unit.Api.Attributes
 
             RequireAccessAttribute attribute = new RequireAccessAttribute();
 
-            attribute.OnAuthorization(context);
+            await attribute.OnAuthorizationAsync(context);
 
             Assert.That(context.Result, Is.Null);
             Assert.That(httpContext.Items["TenantId"], Is.EqualTo("tenant1"));
         }
 
         [Test]
-        public void OnAuthorization_ShouldReturnUnauthorized_UnauthenticatedWithInvalidApiKey()
+        public async Task OnAuthorization_ShouldReturnUnauthorized_UnauthenticatedWithInvalidApiKey()
         {
             DefaultHttpContext httpContext = new DefaultHttpContext();
             httpContext.Request.Headers["X-Api-Key"] = "invalid-secret";
@@ -93,13 +93,13 @@ namespace Archon.Testing.Unit.Api.Attributes
 
             RequireAccessAttribute attribute = new RequireAccessAttribute();
 
-            attribute.OnAuthorization(context);
+            await attribute.OnAuthorizationAsync(context);
 
             Assert.That(context.Result, Is.InstanceOf<UnauthorizedResult>());
         }
 
         [Test]
-        public void OnAuthorization_ShouldReturnUnauthorized_UnauthenticatedWithMissingApiKey()
+        public async Task OnAuthorization_ShouldReturnUnauthorized_UnauthenticatedWithMissingApiKey()
         {
             DefaultHttpContext httpContext = new DefaultHttpContext();
             httpContext.RequestServices = CreateServiceProviderWithTenantResolver();
@@ -116,68 +116,68 @@ namespace Archon.Testing.Unit.Api.Attributes
 
             RequireAccessAttribute attribute = new RequireAccessAttribute();
 
-            attribute.OnAuthorization(context);
+            await attribute.OnAuthorizationAsync(context);
 
             Assert.That(context.Result, Is.InstanceOf<UnauthorizedResult>());
         }
 
         [Test]
-        public void OnAuthorization_ShouldAllow_RootUser()
+        public async Task OnAuthorization_ShouldAllow_RootUser()
         {
             AuthorizationFilterContext context = CreateContext("root", "true");
             RequireAccessAttribute attribute = new RequireAccessAttribute();
 
-            attribute.OnAuthorization(context);
+            await attribute.OnAuthorizationAsync(context);
 
             Assert.That(context.Result, Is.Null);
         }
 
         [Test]
-        public void OnAuthorization_ShouldDeny_UnauthenticatedUser()
+        public async Task OnAuthorization_ShouldDeny_UnauthenticatedUser()
         {
             AuthorizationFilterContext context = CreateContext(isAuthenticated: false);
             RequireAccessAttribute attribute = new RequireAccessAttribute();
 
-            attribute.OnAuthorization(context);
+            await attribute.OnAuthorizationAsync(context);
 
             Assert.That(context.Result, Is.InstanceOf<UnauthorizedResult>());
         }
 
         [Test]
-        public void OnAuthorization_ShouldDeny_MissingPermission()
+        public async Task OnAuthorization_ShouldDeny_MissingPermission()
         {
             AuthorizationFilterContext context = CreateContext("permission", "other.action");
             RequireAccessAttribute attribute = new RequireAccessAttribute();
 
-            attribute.OnAuthorization(context);
+            await attribute.OnAuthorizationAsync(context);
 
             Assert.That(context.Result, Is.InstanceOf<ForbidResult>());
         }
 
         [Test]
-        public void OnAuthorization_ShouldDeny_WrongPermission()
+        public async Task OnAuthorization_ShouldDeny_WrongPermission()
         {
             AuthorizationFilterContext context = CreateContext("permission", "test.delete");
             RequireAccessAttribute attribute = new RequireAccessAttribute();
 
-            attribute.OnAuthorization(context);
+            await attribute.OnAuthorizationAsync(context);
 
             Assert.That(context.Result, Is.InstanceOf<ForbidResult>());
         }
 
         [Test]
-        public void OnAuthorization_ShouldUseCamelCase_ControllerAndAction()
+        public async Task OnAuthorization_ShouldUseCamelCase_ControllerAndAction()
         {
             AuthorizationFilterContext context = CreateContext("permission", "testController.createUser", controllerName: "TestController", actionName: "CreateUser");
             RequireAccessAttribute attribute = new RequireAccessAttribute();
 
-            attribute.OnAuthorization(context);
+            await attribute.OnAuthorizationAsync(context);
 
             Assert.That(context.Result, Is.Null);
         }
 
         [Test]
-        public void OnAuthorization_ShouldDeny_NonControllerActionDescriptor()
+        public async Task OnAuthorization_ShouldDeny_NonControllerActionDescriptor()
         {
             DefaultHttpContext httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("permission", "test.action")], "TestAuth")) };
             ActionDescriptor actionDescriptor = new ActionDescriptor();
@@ -185,7 +185,7 @@ namespace Archon.Testing.Unit.Api.Attributes
             AuthorizationFilterContext context = new AuthorizationFilterContext(actionContext, []);
             RequireAccessAttribute attribute = new RequireAccessAttribute();
 
-            attribute.OnAuthorization(context);
+            await attribute.OnAuthorizationAsync(context);
 
             Assert.That(context.Result, Is.InstanceOf<ForbidResult>());
         }
