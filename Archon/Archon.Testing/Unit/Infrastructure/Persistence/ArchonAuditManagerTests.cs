@@ -79,7 +79,7 @@ namespace Archon.Testing.Unit.Infrastructure.Persistence
 
             ArchonAuditManager auditManager = new(context.ChangeTracker, null, null);
             auditManager.ApplyEntityTimestamps();
-            List<AuditEntry> entries = auditManager.CreateAuditEntries();
+            List<AuditEntry> entries = ArchonAuditManager.MaterializeAuditEntries(auditManager.CapturePendingAuditEntries());
 
             Assert.That(entries.Count, Is.EqualTo(1));
             Assert.That(entries[0].Action, Is.EqualTo(AuditAction.Insert));
@@ -101,7 +101,7 @@ namespace Archon.Testing.Unit.Infrastructure.Persistence
 
             ArchonAuditManager auditManager = new(context.ChangeTracker, null, null);
             auditManager.ApplyEntityTimestamps();
-            List<AuditEntry> entries = auditManager.CreateAuditEntries();
+            List<AuditEntry> entries = ArchonAuditManager.MaterializeAuditEntries(auditManager.CapturePendingAuditEntries());
 
             Assert.That(entries.Count, Is.EqualTo(1));
             Assert.That(entries[0].Action, Is.EqualTo(AuditAction.Update));
@@ -118,7 +118,7 @@ namespace Archon.Testing.Unit.Infrastructure.Persistence
             context.Entry(entity).State = EntityState.Deleted;
 
             ArchonAuditManager auditManager = new(context.ChangeTracker, null, null);
-            List<AuditEntry> entries = auditManager.CreateAuditEntries();
+            List<AuditEntry> entries = ArchonAuditManager.MaterializeAuditEntries(auditManager.CapturePendingAuditEntries());
 
             Assert.That(entries.Count, Is.EqualTo(1));
             Assert.That(entries[0].Action, Is.EqualTo(AuditAction.Delete));
@@ -135,7 +135,7 @@ namespace Archon.Testing.Unit.Infrastructure.Persistence
 
             ArchonAuditManager auditManager = new(context.ChangeTracker, currentUser, null);
             auditManager.ApplyEntityTimestamps();
-            List<AuditEntry> entries = auditManager.CreateAuditEntries();
+            List<AuditEntry> entries = ArchonAuditManager.MaterializeAuditEntries(auditManager.CapturePendingAuditEntries());
 
             Assert.That(entries[0].ChangedBy, Is.EqualTo("test@archon.dev"));
         }
@@ -151,7 +151,7 @@ namespace Archon.Testing.Unit.Infrastructure.Persistence
 
             ArchonAuditManager auditManager = new(context.ChangeTracker, null, tenantContext);
             auditManager.ApplyEntityTimestamps();
-            List<AuditEntry> entries = auditManager.CreateAuditEntries();
+            List<AuditEntry> entries = ArchonAuditManager.MaterializeAuditEntries(auditManager.CapturePendingAuditEntries());
 
             Assert.That(entries[0].TenantId, Is.EqualTo("tenant-a"));
         }
@@ -169,7 +169,7 @@ namespace Archon.Testing.Unit.Infrastructure.Persistence
 
             ArchonAuditManager auditManager = new(context.ChangeTracker, null, null);
             auditManager.ApplyEntityTimestamps();
-            List<AuditEntry> entries = auditManager.CreateAuditEntries();
+            List<AuditEntry> entries = ArchonAuditManager.MaterializeAuditEntries(auditManager.CapturePendingAuditEntries());
 
             Assert.That(entries[0].CorrelationId, Is.EqualTo(activity.TraceId.ToString()));
         }
@@ -187,11 +187,38 @@ namespace Archon.Testing.Unit.Infrastructure.Persistence
 
             ArchonAuditManager auditManager = new(context.ChangeTracker, null, null);
             auditManager.ApplyEntityTimestamps();
-            List<AuditEntry> entries = auditManager.CreateAuditEntries();
+            List<AuditEntry> entries = ArchonAuditManager.MaterializeAuditEntries(auditManager.CapturePendingAuditEntries());
 
             Assert.That(entries.Count, Is.EqualTo(1));
             Assert.That(entries[0].PropertyChanges.Any(pc => pc.PropertyName == nameof(TestAuditableEntity.Name)), Is.True);
             Assert.That(entries[0].PropertyChanges.Any(pc => pc.PropertyName == nameof(TestAuditableEntity.Description)), Is.False);
+        }
+
+        // Regressao: a auditoria de INSERT gravava EntityId "0" porque a AuditEntry era materializada
+        // junto com a captura, antes do banco gerar o Id. Este teste NAO pre-atribui o Id — os demais
+        // testes de insert chamam SetId antes de adicionar, e por isso mascaravam o defeito.
+        [Test]
+        public void MaterializeAuditEntries_ShouldUseIdGeneratedOnSave_ForInsert()
+        {
+            using TestDbContext context = CreateContext();
+            TestAuditableEntity entity = new TestAuditableEntity { Name = "Test" };
+            context.Entities.Add(entity);
+
+            ArchonAuditManager auditManager = new(context.ChangeTracker, null, null);
+            auditManager.ApplyEntityTimestamps();
+
+            List<ArchonAuditManager.PendingAuditEntry> pending = auditManager.CapturePendingAuditEntries();
+            long idNaCaptura = entity.Id;
+
+            // Simula o que o banco faz no SaveChanges: define o Id definitivo. A materializacao vem
+            // depois e precisa enxergar esse valor, nao o que existia na captura.
+            SetId(entity, 42);
+            List<AuditEntry> entries = ArchonAuditManager.MaterializeAuditEntries(pending);
+
+            Assert.That(idNaCaptura, Is.Not.EqualTo(42), "cenario invalido: o Id precisa mudar entre captura e materializacao");
+            Assert.That(entries.Count, Is.EqualTo(1));
+            Assert.That(entries[0].Action, Is.EqualTo(AuditAction.Insert));
+            Assert.That(entries[0].EntityId, Is.EqualTo("42"));
         }
 
         private class TestAuditableEntity : Entity

@@ -86,8 +86,16 @@ namespace Archon.Infrastructure.Persistence.EF
 
             List<IDomainEvent> domainEvents = CollectDomainEvents();
             auditManager.ApplyEntityTimestamps();
-            List<AuditEntry> auditEntries = auditManager.CreateAuditEntries();
+
+            // Captura ANTES do save: estado, valores originais e propriedades modificadas so existem
+            // enquanto o ChangeTracker nao foi aceito. Materializacao DEPOIS: o Id de entidade inserida
+            // e gerado pelo banco no save. Fazer as duas coisas juntas gravava EntityId "0" em toda
+            // auditoria de insercao.
+            List<ArchonAuditManager.PendingAuditEntry> pendingAuditEntries = auditManager.CapturePendingAuditEntries();
+
             int result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+            List<AuditEntry> auditEntries = ArchonAuditManager.MaterializeAuditEntries(pendingAuditEntries);
 
             if (auditEntries.Count > 0)
             {

@@ -45,7 +45,12 @@ namespace Archon.Infrastructure.Persistence.EF
             }
         }
 
-        public List<AuditEntry> CreateAuditEntries()
+        /// <summary>
+        /// Captura o que so existe ANTES do save: estado da entidade, valores originais e quais
+        /// propriedades foram modificadas. Depois do SaveChanges o ChangeTracker perde essa informacao.
+        /// Nao materializa a <see cref="AuditEntry"/> aqui de proposito — ver MaterializeAuditEntries.
+        /// </summary>
+        public List<PendingAuditEntry> CapturePendingAuditEntries()
         {
             string? correlationId = ResolveCorrelationId();
             string? changedBy = currentUser?.Email;
@@ -59,8 +64,17 @@ namespace Archon.Infrastructure.Persistence.EF
                     entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
                 .Select(entry => PendingAuditEntry.Create(entry, changedAt, changedBy, correlationId, tenantId))
                 .Where(entry => entry.PropertyChanges.Count > 0 || entry.Action != AuditAction.Update)
-                .Select(entry => entry.ToAuditEntry())
                 .ToList();
+        }
+
+        /// <summary>
+        /// Materializa as entradas DEPOIS do save. O Id de entidade inserida e gerado pelo banco
+        /// (ValueGenerated.OnAdd), entao so existe apos o SaveChanges: materializar junto com a captura
+        /// gravava EntityId "0" em toda auditoria de insercao.
+        /// </summary>
+        public static List<AuditEntry> MaterializeAuditEntries(IReadOnlyCollection<PendingAuditEntry> pendingEntries)
+        {
+            return pendingEntries.Select(entry => entry.ToAuditEntry()).ToList();
         }
 
         private static (Entity? parentEntity, string? parentEntityName) ResolveParent(EntityEntry<Entity> entry)
@@ -104,7 +118,7 @@ namespace Archon.Infrastructure.Persistence.EF
             return Activity.Current?.TraceId.ToString();
         }
 
-        private sealed class PendingAuditEntry
+        internal sealed class PendingAuditEntry
         {
             public Entity Entity { get; init; } = null!;
 
