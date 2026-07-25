@@ -3,7 +3,6 @@ using Archon.Application.Events;
 using Archon.Application.MultiTenancy;
 using Archon.Application.Services;
 using Archon.Core.ValueObjects;
-using Archon.Infrastructure.BackgroundJobs;
 using Archon.Infrastructure.Events;
 using Archon.Infrastructure.Integrations;
 using Archon.Infrastructure.IdentityManagement;
@@ -12,9 +11,6 @@ using Archon.Infrastructure.RestApi;
 using Archon.Infrastructure.MultiTenancy;
 using Archon.Infrastructure.Persistence.EF;
 using Archon.Infrastructure.Services;
-using Hangfire;
-using Hangfire.PostgreSql;
-using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -126,41 +122,6 @@ namespace Archon.Infrastructure.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddArchonHangfire(this IServiceCollection services, IConfiguration configuration)
-        {
-            TenantDatabaseOptions tenantDatabaseOptions = BindTenantDatabaseOptions(configuration);
-            (string connectionString, DatabaseProvider databaseProvider) = GetHangfireStorage(tenantDatabaseOptions);
-
-            services.AddHangfire(config =>
-            {
-                config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-                    .UseSimpleAssemblyNameTypeSerializer()
-                    .UseRecommendedSerializerSettings();
-
-                switch (databaseProvider)
-                {
-                    case DatabaseProvider.PostgreSql:
-                        config.UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString));
-                        break;
-
-                    case DatabaseProvider.SqlServer:
-                        config.UseSqlServerStorage(connectionString, new SqlServerStorageOptions());
-                        break;
-
-                    case DatabaseProvider.MySql:
-                        throw new NotSupportedException("Hangfire storage for MySql is not supported by Archon yet.");
-
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(databaseProvider), databaseProvider, "Unsupported Hangfire storage provider.");
-                }
-            });
-
-            services.AddHangfireServer();
-            services.AddSingleton<IBackgroundJobService, HangfireBackgroundJobService>();
-
-            return services;
-        }
-
         public static IServiceCollection AddServicesFromAssembly(this IServiceCollection services, Assembly assembly)
         {
             services.Scan(scan => scan
@@ -174,13 +135,6 @@ namespace Archon.Infrastructure.DependencyInjection
                 .WithScopedLifetime());
 
             return services;
-        }
-
-        public static IApplicationBuilder UseArchonHangfire(this IApplicationBuilder app, string dashboardPath = "/hangfire")
-        {
-            app.UseHangfireDashboard(dashboardPath);
-
-            return app;
         }
 
         public static IServiceCollection RunMigrations(this IServiceCollection services, IConfiguration configuration, string schema, params Assembly[] migrationAssemblies)
@@ -297,17 +251,5 @@ namespace Archon.Infrastructure.DependencyInjection
                 "Refusing to fall back to an arbitrary tenant to avoid operating on the wrong tenant's data.");
         }
 
-        private static (string connectionString, DatabaseProvider databaseProvider) GetHangfireStorage(TenantDatabaseOptions tenantDatabaseOptions)
-        {
-            KeyValuePair<string, TenantDatabaseOption> tenant = tenantDatabaseOptions.TenantDatabases
-                .FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Value.ConnectionString));
-
-            if (!string.IsNullOrWhiteSpace(tenant.Value?.ConnectionString))
-            {
-                return (tenant.Value.ConnectionString, tenant.Value.GetDatabaseProvider());
-            }
-
-            throw new InvalidOperationException("No connection string found for Hangfire storage. Configure TenantDatabases with at least one valid connection.");
-        }
     }
 }
