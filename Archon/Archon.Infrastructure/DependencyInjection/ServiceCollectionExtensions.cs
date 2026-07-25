@@ -185,6 +185,12 @@ namespace Archon.Infrastructure.DependencyInjection
 
         public static IServiceCollection RunMigrations(this IServiceCollection services, IConfiguration configuration, string schema, params Assembly[] migrationAssemblies)
         {
+            // O runner e dependencia de TenantBootstrapService, que provisiona banco de tenant sob
+            // demanda e e registrado independentemente desta flag. Por isso o registro vem antes do
+            // early return: a flag controla se as migrations rodam no startup, nao se o runner existe.
+            // Registrando depois, "RunMigrations: false" derrubava o startup com erro de DI.
+            services.AddSingleton(new TenantMigrationRunner(schema, migrationAssemblies));
+
             if (!configuration.GetValue<bool>("RunMigrations", false))
             {
                 return services;
@@ -205,8 +211,6 @@ namespace Archon.Infrastructure.DependencyInjection
                     Console.WriteLine($"Migration failed for tenant {name}: {exception.Message}");
                 }
             }
-
-            services.AddSingleton(new TenantMigrationRunner(schema, migrationAssemblies));
 
             return services;
         }
