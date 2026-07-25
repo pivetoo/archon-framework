@@ -154,19 +154,41 @@ namespace Archon.Testing.Unit.Infrastructure.Services
         }
 
         [Test]
-        public async Task ExecuteInTransaction_ShouldRollback_OnFailure()
+        public async Task ExecuteInTransaction_ShouldRollbackAndRethrow_OnUnexpectedFailure()
         {
             using TestDbContext context = CreateContext();
             TestCrudService service = new(context);
 
+            // Falha inesperada precisa SUBIR. Antes virava `return false` e desaparecia se o chamador
+            // nao checasse o retorno — timeout, conexao caida e bug sumiam do mesmo jeito.
+            InvalidOperationException? exception = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await service.ExecuteInTransaction(async () =>
+                {
+                    context.Entities.Add(new TestEntity { Name = "A" });
+                    throw new InvalidOperationException("Simulated error");
+                }));
+
+            Assert.That(exception!.Message, Is.EqualTo("Simulated error"));
+            Assert.That(await context.Entities.CountAsync(), Is.EqualTo(0), "a transacao precisa ter sido revertida");
+        }
+
+        [Test]
+        public async Task ExecuteInTransaction_ShouldReturnFalseAndRecordMessage_OnKeyNotFound()
+        {
+            using TestDbContext context = CreateContext();
+            TestCrudService service = new(context);
+
+            // KeyNotFoundException e o unico controle de fluxo esperado dentro da transacao: Update a
+            // lanca quando o registro some, e ApiControllerCrud.ResolveServiceError depende dela para
+            // devolver 404 em vez de 422.
             bool result = await service.ExecuteInTransaction(async () =>
             {
-                context.Entities.Add(new TestEntity { Name = "A" });
-                throw new InvalidOperationException("Simulated error");
+                await Task.CompletedTask;
+                throw new KeyNotFoundException("record.notFound");
             });
 
             Assert.That(result, Is.False);
-            Assert.That(await context.Entities.CountAsync(), Is.EqualTo(0));
+            Assert.That(service.Messages.Any(message => message is KeyNotFoundException), Is.True);
         }
 
         [Test]

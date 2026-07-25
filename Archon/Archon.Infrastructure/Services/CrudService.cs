@@ -61,8 +61,19 @@ namespace Archon.Infrastructure.Services
                     throw new IntegrityException();
                 }
 
-                messages.Add(exception);
-                return false;
+                // Apenas o controle de fluxo ESPERADO vira mensagem. `KeyNotFoundException` e lancada
+                // pelo proprio Update quando o registro some entre a checagem e a transacao, e
+                // `ApiControllerCrud.ResolveServiceError` depende dela para devolver 404. Excecao de
+                // dominio sobe para o middleware, que ja sabe mapear cada tipo no status certo.
+                if (exception is KeyNotFoundException)
+                {
+                    messages.Add(exception);
+                    return false;
+                }
+
+                // Qualquer outra coisa e falha de verdade: timeout, conexao caida, bug. Antes daqui
+                // tudo virava `return false` e desaparecia se o chamador nao checasse o retorno.
+                throw;
             }
             finally
             {
@@ -149,7 +160,15 @@ namespace Archon.Infrastructure.Services
         public virtual async Task<T?> Delete(long id, CancellationToken cancellationToken = default)
         {
             messages.Clear();
-            T? entity = await DbContext.Set<T>()
+
+            // Reaproveita a instancia ja rastreada quando existir. Buscar sempre AsNoTracking e mandar
+            // RemoveRange obriga o EF a anexar uma SEGUNDA instancia da mesma chave, e ele recusa com
+            // "another instance with the same key value is already being tracked". Enquanto o
+            // ExecuteInTransaction engolia excecao isso virava um delete que falhava em silencio.
+            T? entity = DbContext.ChangeTracker.Entries<T>()
+                .FirstOrDefault(entry => entry.Entity.Id == id)?.Entity;
+
+            entity ??= await DbContext.Set<T>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(current => current.Id == id, cancellationToken);
 
