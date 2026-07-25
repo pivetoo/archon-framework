@@ -24,21 +24,22 @@ namespace Archon.Api.Security
                 sessionId ??= context.User.FindFirst("session_id")?.Value;
                 if (!string.IsNullOrWhiteSpace(sessionId))
                 {
-                    ISessionValidator? sessionValidator = context.RequestServices.GetService<ISessionValidator>();
-                    if (sessionValidator is not null)
+                    // GetRequiredService de proposito: a ausencia do validador ja e barrada no startup
+                    // por UseSessionValidation(). Antes era GetService, e um container sem a
+                    // implementacao fazia o middleware seguir sem validar nada, em silencio.
+                    ISessionValidator sessionValidator = context.RequestServices.GetRequiredService<ISessionValidator>();
+
+                    bool isValid = await sessionValidator.IsSessionValidAsync(sessionId, context.RequestAborted);
+                    if (!isValid)
                     {
-                        bool isValid = await sessionValidator.IsSessionValidAsync(sessionId, context.RequestAborted);
-                        if (!isValid)
+                        IStringLocalizer<ArchonApiResource> localizer = context.RequestServices.GetRequiredService<IStringLocalizer<ArchonApiResource>>();
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        context.Response.ContentType = "application/json";
+                        await context.Response.WriteAsJsonAsync(new ApiResponse
                         {
-                            IStringLocalizer<ArchonApiResource> localizer = context.RequestServices.GetRequiredService<IStringLocalizer<ArchonApiResource>>();
-                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                            context.Response.ContentType = "application/json";
-                            await context.Response.WriteAsJsonAsync(new ApiResponse
-                            {
-                                Message = localizer["auth.session.invalidOrExpired"]
-                            });
-                            return;
-                        }
+                            Message = localizer["auth.session.invalidOrExpired"]
+                        });
+                        return;
                     }
                 }
             }
