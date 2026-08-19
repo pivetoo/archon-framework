@@ -1,12 +1,17 @@
 using Archon.Api.Attributes;
 using Archon.Api.Contracts.Localization;
 using Archon.Api.Localization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Localization;
 using Microsoft.AspNetCore.Mvc;
 using System.Globalization;
 
 namespace Archon.Api.Controllers
 {
+    // O catalogo e texto de interface, e a tela de login precisa dele ANTES de existir sessao.
+    // Sem [AllowAnonymous] explicito, um app que feche o default do pipeline (FallbackPolicy)
+    // devolve 401 aqui e a propria tela de login entra em loop de retentativa.
+    [AllowAnonymous]
     public sealed class LocalizationController : ApiControllerBase
     {
         private readonly IStringLocalizerFactory stringLocalizerFactory;
