@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using Archon.Application.MultiTenancy;
@@ -28,11 +29,35 @@ namespace Archon.Api.Attributes
 
             if (user.Identity?.IsAuthenticated == true)
             {
+                if (IsSubscriptionBlocked(user) && !AllowsSubscriptionBlocked(context))
+                {
+                    // 402: a recusa e por pagamento, nao por permissao. O app distingue os dois
+                    // casos para mandar o cliente a tela de assinatura em vez de "sem acesso".
+                    context.Result = new StatusCodeResult(StatusCodes.Status402PaymentRequired);
+                    return;
+                }
+
                 AuthorizeUser(context, user);
                 return;
             }
 
             await AuthorizeApiKeyAsync(context);
+        }
+
+        private static bool IsSubscriptionBlocked(ClaimsPrincipal user)
+        {
+            return user.HasClaim("subscription_blocked", "true");
+        }
+
+        private static bool AllowsSubscriptionBlocked(AuthorizationFilterContext context)
+        {
+            if (context.ActionDescriptor is not ControllerActionDescriptor actionDescriptor)
+            {
+                return false;
+            }
+
+            return actionDescriptor.MethodInfo.GetCustomAttribute<AllowWhenSubscriptionBlockedAttribute>(inherit: true) is not null
+                || actionDescriptor.ControllerTypeInfo.GetCustomAttribute<AllowWhenSubscriptionBlockedAttribute>(inherit: true) is not null;
         }
 
         private static void AuthorizeUser(AuthorizationFilterContext context, ClaimsPrincipal user)
