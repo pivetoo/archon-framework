@@ -15,7 +15,7 @@ namespace Archon.Infrastructure.MultiTenancy
         };
 
         private static readonly object HydrationLock = new();
-        private static readonly Dictionary<string, IReadOnlyList<BootstrapTenant>> HydrationCache = new();
+        private static readonly Dictionary<string, (DateTime FetchedAtUtc, IReadOnlyList<BootstrapTenant> Tenants)> HydrationCache = new();
 
         public static IReadOnlyList<BootstrapTenant> Hydrate(IConfiguration configuration)
         {
@@ -31,13 +31,60 @@ namespace Archon.Infrastructure.MultiTenancy
 
             lock (HydrationLock)
             {
-                if (HydrationCache.TryGetValue(cacheKey, out IReadOnlyList<BootstrapTenant>? cached))
+                if (HydrationCache.TryGetValue(cacheKey, out (DateTime FetchedAtUtc, IReadOnlyList<BootstrapTenant> Tenants) cached))
                 {
-                    return cached;
+                    return cached.Tenants;
                 }
 
                 IReadOnlyList<BootstrapTenant> resolved = HydrateOnce(configuration, options);
-                HydrationCache[cacheKey] = resolved;
+                HydrationCache[cacheKey] = (DateTime.UtcNow, resolved);
+                return resolved;
+            }
+        }
+
+        /// <summary>
+        /// Igual a <see cref="Hydrate"/>, mas reconsulta o IdentityManagement quando o cache passa de
+        /// <paramref name="maxAge"/> em vez de ficar congelado pela vida inteira do processo.
+        ///
+        /// `Hydrate` existe pra o overlay de configuracao no boot (roda uma vez so, antes do DI estar
+        /// pronto) e o `TenantDatabaseOptions` que sai dali fica parado depois disso: tenant criado
+        /// apos o processo subir fica invisivel pros jobs de fundo ate alguem reiniciar o servico. Foi
+        /// o que aconteceu com o IntegrationPlatform em 2026-08-24 — o queue worker nunca soube que um
+        /// tenant novo existia e a fila dele nunca andou. `TenantJobRunner` de cada sistema deve chamar
+        /// este metodo a cada tick em vez de ler `TenantDatabaseOptions` direto.
+        ///
+        /// Falha ou lista vazia na tentativa de atualizar mantem a ultima lista boa (so atualiza o
+        /// carimbo de hora, pra nao bater no IdentityManagement de novo a cada tick): uma
+        /// indisponibilidade passageira do IdM nao pode esvaziar os jobs de fundo de todos os tenants.
+        /// </summary>
+        public static IReadOnlyList<BootstrapTenant> RefreshIfStale(IConfiguration configuration, TimeSpan maxAge)
+        {
+            IdentityCatalogOptions options = new();
+            configuration.GetSection("IdentityCatalog").Bind(options);
+
+            if (!options.IsConfigured)
+            {
+                return Array.Empty<BootstrapTenant>();
+            }
+
+            string cacheKey = $"{options.BaseUrl}|{options.ApplicationId}";
+
+            lock (HydrationLock)
+            {
+                bool hasCache = HydrationCache.TryGetValue(cacheKey, out (DateTime FetchedAtUtc, IReadOnlyList<BootstrapTenant> Tenants) cached);
+                if (hasCache && DateTime.UtcNow - cached.FetchedAtUtc < maxAge)
+                {
+                    return cached.Tenants;
+                }
+
+                IReadOnlyList<BootstrapTenant> resolved = HydrateOnce(configuration, options);
+                if (resolved.Count == 0 && hasCache)
+                {
+                    HydrationCache[cacheKey] = (DateTime.UtcNow, cached.Tenants);
+                    return cached.Tenants;
+                }
+
+                HydrationCache[cacheKey] = (DateTime.UtcNow, resolved);
                 return resolved;
             }
         }
