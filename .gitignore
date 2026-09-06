@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Claude Code - configuracao local da sessao; os hooks apontam para a raiz do monorepo (nunca versionar)
+.claude/settings.json
+.claude/settings.local.json
