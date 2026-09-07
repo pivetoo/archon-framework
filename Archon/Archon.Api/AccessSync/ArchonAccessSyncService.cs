@@ -34,7 +34,7 @@ namespace Archon.Api.AccessSync
             this.localizationCatalogOptions = localizationCatalogOptions;
         }
 
-        public async Task SyncAsync(CancellationToken cancellationToken = default)
+        public async Task<AccessResourceSyncResult?> SyncAsync(CancellationToken cancellationToken = default)
         {
             List<IStringLocalizer> localizers = localizationCatalogOptions.ResourceTypes
                 .Select(stringLocalizerFactory.Create)
@@ -54,7 +54,7 @@ namespace Archon.Api.AccessSync
                     .ToList();
             }
 
-            await identityManagementClient.SyncAccessResourcesAsync(resources, cancellationToken);
+            return await identityManagementClient.SyncAccessResourcesAsync(resources, cancellationToken);
         }
 
         private static AccessResourceModel? CreateResource(RouteEndpoint endpoint, string systemAudience, IReadOnlyList<IStringLocalizer> localizers)

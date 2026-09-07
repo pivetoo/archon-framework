@@ -1,7 +1,9 @@
 using Archon.Application.Integrations;
 using Archon.Application.Services;
 using Archon.Core.Access;
+using Archon.Core.Responses;
 using Archon.Infrastructure.Integrations;
+using Archon.Infrastructure.MultiTenancy;
 using Archon.Infrastructure.RestApi;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -17,13 +19,15 @@ namespace Archon.Infrastructure.IdentityManagement
         private readonly Rest restApi;
         private readonly IMemoryCache cache;
         private readonly IIntegrationService integrationService;
+        private readonly IdentityCatalogOptions catalogOptions;
         private readonly TimeSpan cacheTtl;
 
-        public IdentityManagementClient(Rest restApi, IMemoryCache cache, IIntegrationService integrationService, IOptions<IntegrationOptions> options)
+        public IdentityManagementClient(Rest restApi, IMemoryCache cache, IIntegrationService integrationService, IOptions<IntegrationOptions> options, IOptions<IdentityCatalogOptions> catalogOptions)
         {
             this.restApi = restApi;
             this.cache = cache;
             this.integrationService = integrationService;
+            this.catalogOptions = catalogOptions.Value;
 
             IntegrationOptions integrationOptions = options.Value;
             cacheTtl = integrationOptions.CacheTtl > TimeSpan.Zero
@@ -106,9 +110,32 @@ namespace Archon.Infrastructure.IdentityManagement
             return signingKeys;
         }
 
-        public async Task SyncAccessResourcesAsync(IReadOnlyCollection<AccessResourceModel> resources, CancellationToken ct = default)
+        public async Task<AccessResourceSyncResult?> SyncAccessResourcesAsync(IReadOnlyCollection<AccessResourceModel> resources, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(resources);
+
+            RestRequest request = await CreateAccessSyncRequestAsync(resources, ct);
+            RestResponse<ApiResponse<AccessResourceSyncResult>> response = await restApi.Fetch<ApiResponse<AccessResourceSyncResult>>(request, ct);
+
+            if (!response.Ok)
+            {
+                throw new HttpRequestException($"IdentityManagement Sync returned {response.Status}");
+            }
+
+            return response.Data?.Data;
+        }
+
+        // O sync do catalogo de endpoints e uma operacao do SISTEMA, nao de um tenant, e roda na subida
+        // (sem request, logo sem tenant resolvido). Com IdentityCatalog configurado ele autentica pela
+        // chave de catalogo e nao toca no banco de tenant nenhum; a tabela integrations fica so como
+        // fallback dos sistemas single-tenant que nao usam o catalogo.
+        private async Task<RestRequest> CreateAccessSyncRequestAsync(IReadOnlyCollection<AccessResourceModel> resources, CancellationToken ct)
+        {
+            if (catalogOptions.IsConfigured)
+            {
+                return RestRequest.Post($"{catalogOptions.BaseUrl.TrimEnd('/')}/api/AccessResources/Sync", resources)
+                    .WithApiKey(catalogOptions.ResolvedApiKey);
+            }
 
             (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
             if (baseUrl is null)
@@ -116,14 +143,8 @@ namespace Archon.Infrastructure.IdentityManagement
                 throw new InvalidOperationException("Integration 'identity-management' is not configured.");
             }
 
-            RestResponse<object> response = await restApi.Fetch<object>(
-                RestRequest.Post($"{baseUrl}/api/AccessResources/Sync", resources)
-                           .WithTenantApiKey(tenantId, secret!), ct);
-
-            if (!response.Ok)
-            {
-                throw new HttpRequestException($"IdentityManagement Sync returned {response.Status}");
-            }
+            return RestRequest.Post($"{baseUrl}/api/AccessResources/Sync", resources)
+                .WithTenantApiKey(tenantId, secret!);
         }
 
         private async Task<string?> ResolveBaseUrlAsync(CancellationToken ct)

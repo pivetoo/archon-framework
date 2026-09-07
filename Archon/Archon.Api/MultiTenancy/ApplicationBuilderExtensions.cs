@@ -2,6 +2,7 @@ using Archon.Api.AccessSync;
 using Archon.Api.ExceptionHandling;
 using Archon.Api.Security;
 using Archon.Application.Abstractions;
+using Archon.Core.Access;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -64,7 +65,18 @@ namespace Archon.Api.MultiTenancy
                     try
                     {
                         ArchonAccessSyncService accessSyncService = ActivatorUtilities.CreateInstance<ArchonAccessSyncService>(scope.ServiceProvider);
-                        await accessSyncService.SyncAsync(cancellationToken);
+                        AccessResourceSyncResult? result = await accessSyncService.SyncAsync(cancellationToken);
+
+                        if (result is null)
+                        {
+                            logger.LogInformation("Access resources synchronized with IdentityManagement.");
+                        }
+                        else
+                        {
+                            logger.LogInformation(
+                                "Access resources synchronized with IdentityManagement: total={Total}, created={Created}, updated={Updated}, deactivated={Deactivated}.",
+                                result.TotalCount, result.CreatedCount, result.UpdatedCount, result.DeactivatedCount);
+                        }
                     }
                     catch (Exception exception)
                     {
