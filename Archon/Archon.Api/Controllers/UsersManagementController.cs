@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Archon.Api.Controllers
 {
     [AccessArea("usersManagement.area")]
+    [AccessModule("usuarios")]
     public sealed class UsersManagementController : ApiControllerBase
     {
         private readonly IdentityUsersClient identityUsersClient;
@@ -133,7 +134,8 @@ namespace Archon.Api.Controllers
                 ContractId = contractId.Value,
                 IsRoot = request.IsRoot,
                 IsDefault = request.IsDefault,
-                AccessResourceIds = request.AccessResourceIds
+                AccessResourceIds = request.AccessResourceIds,
+                CapabilityKeys = request.CapabilityKeys
             };
 
             ContractRoleDto role = await identityUsersClient.CreateRoleAsync(payload, cancellationToken);
@@ -150,7 +152,8 @@ namespace Archon.Api.Controllers
                 Description = request.Description,
                 IsRoot = request.IsRoot,
                 IsDefault = request.IsDefault,
-                AccessResourceIds = request.AccessResourceIds
+                AccessResourceIds = request.AccessResourceIds,
+                CapabilityKeys = request.CapabilityKeys
             };
 
             ContractRoleDto role = await identityUsersClient.UpdateRoleAsync(roleId, payload, cancellationToken);
@@ -177,6 +180,20 @@ namespace Archon.Api.Controllers
 
             List<AccessResourceDto> resources = await identityUsersClient.GetAccessResourcesByContractAsync(contractId.Value, cancellationToken);
             return Http200(resources);
+        }
+
+        [RequireAccess("usersManagement.getAccessCapabilities.description")]
+        [GetEndpoint]
+        public async Task<IActionResult> GetAccessCapabilities(CancellationToken cancellationToken)
+        {
+            long? contractId = ResolveCurrentContractId();
+            if (!contractId.HasValue)
+            {
+                return Http403("Contrato ativo não identificado na sessão.");
+            }
+
+            List<AccessCapabilityDto> capabilities = await identityUsersClient.GetAccessCapabilitiesByContractAsync(contractId.Value, cancellationToken);
+            return Http200(capabilities);
         }
 
         private long? ResolveCurrentContractId()
@@ -231,6 +248,8 @@ namespace Archon.Api.Controllers
         public bool IsDefault { get; set; }
 
         public List<long> AccessResourceIds { get; set; } = [];
+
+        public List<string> CapabilityKeys { get; set; } = [];
     }
 
     public sealed class UpdateRoleBodyRequestFull
@@ -244,5 +263,7 @@ namespace Archon.Api.Controllers
         public bool IsDefault { get; set; }
 
         public List<long> AccessResourceIds { get; set; } = [];
+
+        public List<string> CapabilityKeys { get; set; } = [];
     }
 }

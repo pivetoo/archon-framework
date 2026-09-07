@@ -17,5 +17,7 @@ namespace Archon.Core.Access
         public string HttpMethod { get; init; } = string.Empty;
 
         public string Route { get; init; } = string.Empty;
+
+        public List<string> Capabilities { get; init; } = [];
     }
 }

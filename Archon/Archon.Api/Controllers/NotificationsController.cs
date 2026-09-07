@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Archon.Api.Controllers
 {
     [AccessArea("notifications.area")]
+    [AccessCapability("geral.basico")]
     public sealed class NotificationsController : ApiControllerBase
     {
         private readonly INotificationService notificationService;

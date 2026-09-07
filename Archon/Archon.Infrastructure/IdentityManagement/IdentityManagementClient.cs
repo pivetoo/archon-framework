@@ -114,12 +114,24 @@ namespace Archon.Infrastructure.IdentityManagement
         {
             ArgumentNullException.ThrowIfNull(resources);
 
-            RestRequest request = await CreateAccessSyncRequestAsync(resources, ct);
+            return await PostSystemSyncAsync("/api/AccessResources/Sync", resources, ct);
+        }
+
+        public async Task<AccessResourceSyncResult?> SyncAccessCapabilitiesAsync(AccessCapabilitySyncRequest request, CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            return await PostSystemSyncAsync("/api/AccessCapabilities/Sync", request, ct);
+        }
+
+        private async Task<AccessResourceSyncResult?> PostSystemSyncAsync(string path, object body, CancellationToken ct)
+        {
+            RestRequest request = await CreateSystemSyncRequestAsync(path, body, ct);
             RestResponse<ApiResponse<AccessResourceSyncResult>> response = await restApi.Fetch<ApiResponse<AccessResourceSyncResult>>(request, ct);
 
             if (!response.Ok)
             {
-                throw new HttpRequestException($"IdentityManagement Sync returned {response.Status}");
+                throw new HttpRequestException($"IdentityManagement {path} returned {response.Status}");
             }
 
             return response.Data?.Data;
@@ -129,11 +141,11 @@ namespace Archon.Infrastructure.IdentityManagement
         // (sem request, logo sem tenant resolvido). Com IdentityCatalog configurado ele autentica pela
         // chave de catalogo e nao toca no banco de tenant nenhum; a tabela integrations fica so como
         // fallback dos sistemas single-tenant que nao usam o catalogo.
-        private async Task<RestRequest> CreateAccessSyncRequestAsync(IReadOnlyCollection<AccessResourceModel> resources, CancellationToken ct)
+        private async Task<RestRequest> CreateSystemSyncRequestAsync(string path, object body, CancellationToken ct)
         {
             if (catalogOptions.IsConfigured)
             {
-                return RestRequest.Post($"{catalogOptions.BaseUrl.TrimEnd('/')}/api/AccessResources/Sync", resources)
+                return RestRequest.Post($"{catalogOptions.BaseUrl.TrimEnd('/')}{path}", body)
                     .WithApiKey(catalogOptions.ResolvedApiKey);
             }
 
@@ -143,7 +155,7 @@ namespace Archon.Infrastructure.IdentityManagement
                 throw new InvalidOperationException("Integration 'identity-management' is not configured.");
             }
 
-            return RestRequest.Post($"{baseUrl}/api/AccessResources/Sync", resources)
+            return RestRequest.Post($"{baseUrl}{path}", body)
                 .WithTenantApiKey(tenantId, secret!);
         }
 

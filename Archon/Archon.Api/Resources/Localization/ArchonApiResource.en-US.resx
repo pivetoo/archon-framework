@@ -379,4 +379,14 @@
   <data name="usersManagement.setActive.description" xml:space="preserve"><value>Permite ativar/desativar usuario.</value></data>
   <data name="usersManagement.update.description" xml:space="preserve"><value>Permite atualizar usuario do contrato ativo.</value></data>
   <data name="usersManagement.updateRole.description" xml:space="preserve"><value>Permite atualizar um perfil do contrato ativo.</value></data>
+  <data name="usersManagement.getAccessCapabilities.description" xml:space="preserve"><value>Lists the module permissions available in the active contract.</value></data>
+  <data name="accessModule.usuarios" xml:space="preserve"><value>Users and roles</value></data>
+  <data name="accessModule.auditoria" xml:space="preserve"><value>Audit</value></data>
+  <data name="accessModule.geral" xml:space="preserve"><value>General</value></data>
+  <data name="accessCapability.usuarios.ver" xml:space="preserve"><value>View users and roles</value></data>
+  <data name="accessCapability.usuarios.editar" xml:space="preserve"><value>Create and edit users and roles</value></data>
+  <data name="accessCapability.usuarios.excluir" xml:space="preserve"><value>Delete roles</value></data>
+  <data name="accessCapability.auditoria.ver" xml:space="preserve"><value>View the audit trail</value></data>
+  <data name="accessCapability.geral.basico" xml:space="preserve"><value>Basic access</value></data>
+  <data name="accessCapability.geral.basico.description" xml:space="preserve"><value>Notifications and the user's own data. Included in every role.</value></data>
 </root>

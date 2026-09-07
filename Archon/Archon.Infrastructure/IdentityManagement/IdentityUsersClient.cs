@@ -315,6 +315,25 @@ namespace Archon.Infrastructure.IdentityManagement
             return response.Data?.Data ?? [];
         }
 
+        public async Task<List<AccessCapabilityDto>> GetAccessCapabilitiesByContractAsync(long contractId, CancellationToken ct = default)
+        {
+            (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
+            if (baseUrl is null)
+            {
+                throw new InvalidOperationException("Integration 'identity-management' is not configured.");
+            }
+
+            RestResponse<ApiResponse<List<AccessCapabilityDto>>> response = await restApi.Fetch<ApiResponse<List<AccessCapabilityDto>>>(
+                RestRequest.Get($"{baseUrl}/api/AccessCapabilities/GetByContract/{contractId}").WithTenantApiKey(tenantId, secret!), ct);
+
+            if (!response.Ok)
+            {
+                throw new HttpRequestException($"IdentityManagement /api/AccessCapabilities/GetByContract/{contractId} returned {response.Status}");
+            }
+
+            return response.Data?.Data ?? [];
+        }
+
         public async Task<List<ContractRoleDto>> GetRolesByContractAsync(long contractId, CancellationToken ct = default)
         {
             (string? baseUrl, string? tenantId, string? secret) = await ResolveIntegrationAsync(ct);
@@ -415,6 +434,8 @@ namespace Archon.Infrastructure.IdentityManagement
         public bool IsDefault { get; set; }
 
         public List<long> AccessResourceIds { get; set; } = [];
+
+        public List<string> CapabilityKeys { get; set; } = [];
     }
 
     public sealed class CreateUserInContractPayload
@@ -445,6 +466,8 @@ namespace Archon.Infrastructure.IdentityManagement
         public bool IsDefault { get; set; }
 
         public List<long> AccessResourceIds { get; set; } = [];
+
+        public List<string> CapabilityKeys { get; set; } = [];
     }
 
     public sealed class UpdateRolePayload
@@ -458,6 +481,29 @@ namespace Archon.Infrastructure.IdentityManagement
         public bool IsDefault { get; set; }
 
         public List<long> AccessResourceIds { get; set; } = [];
+
+        public List<string> CapabilityKeys { get; set; } = [];
+    }
+
+    public sealed class AccessCapabilityDto
+    {
+        public string Key { get; set; } = string.Empty;
+
+        public string Module { get; set; } = string.Empty;
+
+        public string ModuleLabel { get; set; } = string.Empty;
+
+        public int ModuleOrder { get; set; }
+
+        public string Label { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+
+        public int Order { get; set; }
+
+        public bool IsBaseline { get; set; }
+
+        public int ResourceCount { get; set; }
     }
 
     public sealed class AccessResourceDto
@@ -479,5 +525,7 @@ namespace Archon.Infrastructure.IdentityManagement
         public string HttpMethod { get; set; } = string.Empty;
 
         public string Route { get; set; } = string.Empty;
+
+        public List<string> Capabilities { get; set; } = [];
     }
 }

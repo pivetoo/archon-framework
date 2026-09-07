@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reflection;
 using Archon.Api.Attributes;
 using Archon.Api.Localization;
 using Archon.Core.Access;
@@ -10,6 +11,8 @@ using Microsoft.Extensions.Options;
 
 namespace Archon.Api.AccessSync
 {
+    public sealed record AccessSyncOutcome(AccessResourceSyncResult? Resources, AccessResourceSyncResult? Capabilities, int CapabilityCount);
+
     internal sealed class ArchonAccessSyncService
     {
         private const string SyncCulture = "pt-BR";
@@ -34,13 +37,19 @@ namespace Archon.Api.AccessSync
             this.localizationCatalogOptions = localizationCatalogOptions;
         }
 
-        public async Task<AccessResourceSyncResult?> SyncAsync(CancellationToken cancellationToken = default)
+        public async Task<AccessSyncOutcome> SyncAsync(CancellationToken cancellationToken = default)
         {
+            // O resource do proprio framework entra por ultimo: a aplicacao pode sobrescrever qualquer
+            // chave, e os controllers do Archon (auditoria, notificacoes, usuarios) deixam de aparecer
+            // com a chave crua no catalogo.
             List<IStringLocalizer> localizers = localizationCatalogOptions.ResourceTypes
+                .Append(typeof(ArchonApiResource))
+                .Distinct()
                 .Select(stringLocalizerFactory.Create)
                 .ToList();
 
             List<AccessResourceModel> resources;
+            List<AccessCapabilityModel> catalog;
             using (new CultureScope(SyncCulture))
             {
                 resources = endpointDataSource.Endpoints
@@ -52,9 +61,24 @@ namespace Archon.Api.AccessSync
                     .OrderBy(resource => resource.Name, StringComparer.Ordinal)
                     .ThenBy(resource => resource.HttpMethod, StringComparer.Ordinal)
                     .ToList();
+
+                AccessCatalogAttribute? catalogAttribute = Assembly.GetEntryAssembly()?.GetCustomAttribute<AccessCatalogAttribute>();
+                catalog = AccessCapabilityResolver.BuildCatalog(resources, catalogAttribute, key => TryResolveTranslation(key, localizers));
             }
 
-            return await identityManagementClient.SyncAccessResourcesAsync(resources, cancellationToken);
+            AccessResourceSyncResult? resourceResult = await identityManagementClient.SyncAccessResourcesAsync(resources, cancellationToken);
+
+            AccessResourceSyncResult? capabilityResult = null;
+            if (!string.IsNullOrWhiteSpace(jwtOptions.Audience))
+            {
+                capabilityResult = await identityManagementClient.SyncAccessCapabilitiesAsync(new AccessCapabilitySyncRequest
+                {
+                    SystemAudience = jwtOptions.Audience,
+                    Capabilities = catalog
+                }, cancellationToken);
+            }
+
+            return new AccessSyncOutcome(resourceResult, capabilityResult, catalog.Count);
         }
 
         private static AccessResourceModel? CreateResource(RouteEndpoint endpoint, string systemAudience, IReadOnlyList<IStringLocalizer> localizers)
@@ -92,7 +116,8 @@ namespace Archon.Api.AccessSync
                 Controller = controller,
                 Action = action,
                 HttpMethod = httpMethod,
-                Route = NormalizeRoute(endpoint.RoutePattern)
+                Route = NormalizeRoute(endpoint.RoutePattern),
+                Capabilities = AccessCapabilityResolver.Resolve(actionDescriptor.ControllerTypeInfo, actionDescriptor.MethodInfo, httpMethod).ToList()
             };
         }
 
@@ -103,16 +128,21 @@ namespace Archon.Api.AccessSync
                 return string.Empty;
             }
 
+            return TryResolveTranslation(rawValue, localizers) ?? rawValue;
+        }
+
+        private static string? TryResolveTranslation(string key, IReadOnlyList<IStringLocalizer> localizers)
+        {
             foreach (IStringLocalizer localizer in localizers)
             {
-                LocalizedString localized = localizer[rawValue];
+                LocalizedString localized = localizer[key];
                 if (!localized.ResourceNotFound)
                 {
                     return localized.Value;
                 }
             }
 
-            return rawValue;
+            return null;
         }
 
         private static bool RequiresAccess(ControllerActionDescriptor actionDescriptor)
@@ -163,7 +193,7 @@ namespace Archon.Api.AccessSync
             }
         }
 
-        private sealed class AccessResourceComparer : IEqualityComparer<AccessResourceModel>
+        private sealed class AccessResourceComparer : IEqualityComparer<AccessResourceModel?>
         {
             public static AccessResourceComparer Instance { get; } = new AccessResourceComparer();
 
@@ -185,9 +215,9 @@ namespace Archon.Api.AccessSync
                     string.Equals(x.Route, y.Route, StringComparison.Ordinal);
             }
 
-            public int GetHashCode(AccessResourceModel obj)
+            public int GetHashCode(AccessResourceModel? obj)
             {
-                return HashCode.Combine(obj.SystemAudience, obj.Name, obj.HttpMethod, obj.Route);
+                return obj is null ? 0 : HashCode.Combine(obj.SystemAudience, obj.Name, obj.HttpMethod, obj.Route);
             }
         }
     }

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Archon.Api.Controllers
 {
     [AccessArea("audit.area")]
+    [AccessModule("auditoria")]
     public sealed class AuditController : ApiControllerBase
     {
         private readonly IAuditService auditService;

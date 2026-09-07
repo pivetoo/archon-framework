@@ -65,17 +65,18 @@ namespace Archon.Api.MultiTenancy
                     try
                     {
                         ArchonAccessSyncService accessSyncService = ActivatorUtilities.CreateInstance<ArchonAccessSyncService>(scope.ServiceProvider);
-                        AccessResourceSyncResult? result = await accessSyncService.SyncAsync(cancellationToken);
+                        AccessSyncOutcome outcome = await accessSyncService.SyncAsync(cancellationToken);
+                        AccessResourceSyncResult? result = outcome.Resources;
 
                         if (result is null)
                         {
-                            logger.LogInformation("Access resources synchronized with IdentityManagement.");
+                            logger.LogInformation("Access resources synchronized with IdentityManagement (capabilities={Capabilities}).", outcome.CapabilityCount);
                         }
                         else
                         {
                             logger.LogInformation(
-                                "Access resources synchronized with IdentityManagement: total={Total}, created={Created}, updated={Updated}, deactivated={Deactivated}.",
-                                result.TotalCount, result.CreatedCount, result.UpdatedCount, result.DeactivatedCount);
+                                "Access resources synchronized with IdentityManagement: total={Total}, created={Created}, updated={Updated}, deactivated={Deactivated}, capabilities={Capabilities}.",
+                                result.TotalCount, result.CreatedCount, result.UpdatedCount, result.DeactivatedCount, outcome.CapabilityCount);
                         }
                     }
                     catch (Exception exception)
