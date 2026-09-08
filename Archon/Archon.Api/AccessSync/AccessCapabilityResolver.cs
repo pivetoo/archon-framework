@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using Archon.Api.Attributes;
 using Archon.Core.Access;
@@ -10,10 +11,22 @@ namespace Archon.Api.AccessSync
         public const string WriteVerb = "editar";
         public const string DeleteVerb = "excluir";
 
+        // O RequireAccess resolve as capacidades do endpoint a cada request; sem cache seria reflexao
+        // em todo hit. O mapa e fixo em tempo de execucao (vem dos atributos), entao cachear e seguro.
+        private static readonly ConcurrentDictionary<(Type Controller, MethodInfo Action, string HttpMethod), IReadOnlyList<string>> Cache = new();
+
         public static IReadOnlyList<string> Resolve(Type controllerType, MethodInfo action, string httpMethod)
         {
             ArgumentNullException.ThrowIfNull(controllerType);
             ArgumentNullException.ThrowIfNull(action);
+
+            return Cache.GetOrAdd(
+                (controllerType, action, (httpMethod ?? string.Empty).Trim().ToUpperInvariant()),
+                key => ResolveCore(key.Controller, key.Action, key.HttpMethod));
+        }
+
+        private static IReadOnlyList<string> ResolveCore(Type controllerType, MethodInfo action, string httpMethod)
+        {
 
             AccessCapabilityAttribute? explicitCapability = action.GetCustomAttribute<AccessCapabilityAttribute>(inherit: true)
                 ?? controllerType.GetCustomAttribute<AccessCapabilityAttribute>(inherit: true);

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 using System.Security.Claims;
 using Archon.Application.MultiTenancy;
 using Archon.Infrastructure.MultiTenancy;
@@ -221,6 +222,78 @@ namespace Archon.Testing.Unit.Api.Attributes
         {
             public void Action() { }
             public void CreateUser() { }
+        }
+
+        [AccessModule("financeiro")]
+        private class FinanceiroController
+        {
+            public void Get() { }
+
+            [AccessCapability("financeiro.aprovar")]
+            public void Approve() { }
+        }
+
+        private static AuthorizationFilterContext CreateCapabilityContext(Type controllerType, string actionName, string httpMethod, params string[] capabilityClaims)
+        {
+            List<Claim> claims = capabilityClaims.Select(capability => new Claim("capability", capability)).ToList();
+            ClaimsPrincipal user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+            DefaultHttpContext httpContext = new DefaultHttpContext { User = user };
+            httpContext.Request.Method = httpMethod;
+
+            ControllerActionDescriptor actionDescriptor = new ControllerActionDescriptor
+            {
+                ControllerName = controllerType.Name.Replace("Controller", string.Empty),
+                ActionName = actionName,
+                MethodInfo = controllerType.GetMethod(actionName)!,
+                ControllerTypeInfo = controllerType.GetTypeInfo()
+            };
+
+            ActionContext actionContext = new ActionContext(httpContext, new RouteData(), actionDescriptor);
+            return new AuthorizationFilterContext(actionContext, []);
+        }
+
+        [Test]
+        public async Task OnAuthorization_ShouldAllow_WhenCapabilityOfTheEndpointIsGranted()
+        {
+            AuthorizationFilterContext context = CreateCapabilityContext(typeof(FinanceiroController), "Get", "GET", "financeiro.ver");
+
+            await new RequireAccessAttribute().OnAuthorizationAsync(context);
+
+            Assert.That(context.Result, Is.Null);
+        }
+
+        [Test]
+        public async Task OnAuthorization_ShouldForbid_WhenCapabilityDoesNotCoverTheVerb()
+        {
+            // financeiro.ver nao libera POST: escrever exige financeiro.editar.
+            AuthorizationFilterContext context = CreateCapabilityContext(typeof(FinanceiroController), "Get", "POST", "financeiro.ver");
+
+            await new RequireAccessAttribute().OnAuthorizationAsync(context);
+
+            Assert.That(context.Result, Is.TypeOf<ForbidResult>());
+        }
+
+        [Test]
+        public async Task OnAuthorization_ShouldUseTheExplicitCapabilityOfTheAction()
+        {
+            AuthorizationFilterContext granted = CreateCapabilityContext(typeof(FinanceiroController), "Approve", "POST", "financeiro.aprovar");
+            AuthorizationFilterContext denied = CreateCapabilityContext(typeof(FinanceiroController), "Approve", "POST", "financeiro.editar");
+
+            await new RequireAccessAttribute().OnAuthorizationAsync(granted);
+            await new RequireAccessAttribute().OnAuthorizationAsync(denied);
+
+            Assert.That(granted.Result, Is.Null);
+            Assert.That(denied.Result, Is.TypeOf<ForbidResult>());
+        }
+
+        [Test]
+        public async Task OnAuthorization_ShouldForbid_WhenUserHasNeitherPermissionNorCapability()
+        {
+            AuthorizationFilterContext context = CreateCapabilityContext(typeof(FinanceiroController), "Get", "GET", "comercial.ver");
+
+            await new RequireAccessAttribute().OnAuthorizationAsync(context);
+
+            Assert.That(context.Result, Is.TypeOf<ForbidResult>());
         }
     }
 }

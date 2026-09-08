@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
+using Archon.Api.AccessSync;
 using Archon.Application.MultiTenancy;
 using Archon.Infrastructure.MultiTenancy;
 using Microsoft.AspNetCore.Http;
@@ -73,10 +74,32 @@ namespace Archon.Api.Attributes
                 return;
             }
 
+            // Permissao avulsa por endpoint: perfil montado recurso a recurso.
             string access = $"{ToCamelCase(actionDescriptor.ControllerName)}.{ToCamelCase(actionDescriptor.ActionName)}";
             if (user.HasClaim("permission", access))
             {
                 return;
+            }
+
+            // Permissao por modulo: o proprio endpoint declara as capacidades que o liberam
+            // ([AccessModule]/[AccessCapability]), entao o token carrega uma dezena de chaves em vez de
+            // uma claim por endpoint — que era o que estourava o limite de cabecalho do proxy.
+            // Descritor sem tipo/metodo nao deveria acontecer no MVC real, mas negar e melhor do que
+            // deixar a excecao virar 500 no meio do filtro de autorizacao.
+            if (actionDescriptor.ControllerTypeInfo is not null && actionDescriptor.MethodInfo is not null)
+            {
+                IReadOnlyList<string> capabilities = AccessCapabilityResolver.Resolve(
+                    actionDescriptor.ControllerTypeInfo,
+                    actionDescriptor.MethodInfo,
+                    context.HttpContext.Request.Method);
+
+                foreach (string capability in capabilities)
+                {
+                    if (user.HasClaim("capability", capability))
+                    {
+                        return;
+                    }
+                }
             }
 
             context.Result = new ForbidResult();
