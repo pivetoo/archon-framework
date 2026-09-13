@@ -110,38 +110,7 @@ namespace Archon.Api.ExceptionHandling
             object[]? args,
             out string resolved)
         {
-            if (string.IsNullOrWhiteSpace(message))
-            {
-                resolved = archonLocalizer["error.unexpected.short"];
-                return false;
-            }
-
-            object[] formatArgs = args ?? [];
-
-            foreach (Type resourceType in catalog.ResourceTypes)
-            {
-                IStringLocalizer appLocalizer = factory.Create(resourceType);
-                LocalizedString localized = formatArgs.Length > 0
-                    ? appLocalizer[message, formatArgs]
-                    : appLocalizer[message];
-                if (!localized.ResourceNotFound)
-                {
-                    resolved = localized.Value;
-                    return true;
-                }
-            }
-
-            LocalizedString archon = formatArgs.Length > 0
-                ? archonLocalizer[message, formatArgs]
-                : archonLocalizer[message];
-            if (!archon.ResourceNotFound)
-            {
-                resolved = archon.Value;
-                return true;
-            }
-
-            resolved = message;
-            return false;
+            return LocalizedMessageResolver.TryResolve(archonLocalizer, factory, catalog, message, args, out resolved);
         }
 
         private static string ResolveMessage(

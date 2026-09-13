@@ -85,6 +85,7 @@ namespace Archon.Infrastructure.DependencyInjection
             services.AddScoped<AuditService>();
             services.AddScoped(typeof(ICrudService<>), typeof(CrudService<>));
             services.AddScoped(typeof(CrudService<>));
+            services.AddScoped<IBulkOperationRunner, BulkOperationRunner>();
             services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
             foreach (Assembly assembly in modelAssemblies.Where(a => a is not null))

@@ -9,7 +9,7 @@ namespace Archon.Testing.Integration.Support
 {
     internal static class TestApiHost
     {
-        public static async Task<WebApplication> CreateAsync()
+        public static async Task<WebApplication> CreateAsync(Action<IServiceCollection>? configureServices = null)
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
@@ -29,6 +29,7 @@ namespace Archon.Testing.Integration.Support
             builder.Services.AddArchonApi(builder.Configuration);
             builder.Services.AddControllers()
                 .AddApplicationPart(typeof(TestApiController).Assembly);
+            configureServices?.Invoke(builder.Services);
 
             WebApplication app = builder.Build();
             app.UseArchonApi();

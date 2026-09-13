@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using Archon.Api.Attributes;
+using Archon.Api.Contracts.Bulk;
 using Archon.Api.Controllers;
+using Archon.Core.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Archon.Testing.Integration.Support
@@ -35,6 +37,18 @@ namespace Archon.Testing.Integration.Support
         public IActionResult ValidateRequest([FromBody] TestRequest request)
         {
             return Http200(request, "Validated.");
+        }
+
+        // Lote de teste: id 2 viola regra com chave do catalogo, id 3 lanca texto que nao e chave, o resto passa.
+        [DeleteEndpoint("bulk")]
+        public Task<IActionResult> DeleteMany([FromBody] BulkIdsRequest request, CancellationToken cancellationToken)
+        {
+            return ExecuteBulk(request, (id, _) => id switch
+            {
+                2 => throw new BusinessRuleException("record.notFound"),
+                3 => throw new InvalidOperationException("texto livre que nao e chave"),
+                _ => Task.CompletedTask
+            }, cancellationToken);
         }
 
         [GetEndpoint("{id}")]

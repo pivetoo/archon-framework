@@ -1,6 +1,10 @@
+using Archon.Api.Contracts.Bulk;
 using Archon.Api.Localization;
 using Archon.Api.Validation;
 using Archon.Application.Abstractions;
+using Archon.Application.Services;
+using Archon.Core.Bulk;
+using Archon.Core.Entities;
 using Archon.Core.Pagination;
 using Archon.Core.Responses;
 using Microsoft.AspNetCore.Mvc;
@@ -32,6 +36,110 @@ namespace Archon.Api.Controllers
         protected virtual IActionResult? ValidateBody(object? body)
         {
             return ApiRequestValidator.Validate(body, bodyRequired: true, ModelState, Localizer);
+        }
+
+        /// <summary>
+        /// Executa <paramref name="operation"/> para cada id do lote e responde com o resultado por registro.
+        /// Use para reaproveitar o metodo de servico que ja aplica as regras (ex.: excluir um registro).
+        /// </summary>
+        protected async Task<IActionResult> ExecuteBulk(BulkIdsRequest? request, Func<long, CancellationToken, Task> operation, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(operation);
+
+            if (!TryReadBulkIds(request, out IReadOnlyList<long> ids, out IActionResult? invalid))
+            {
+                return invalid!;
+            }
+
+            IBulkOperationRunner runner = HttpContext.RequestServices.GetRequiredService<IBulkOperationRunner>();
+            BulkOperationResult result = await runner.RunAsync(ids, operation, cancellationToken);
+            return BulkResponse(result);
+        }
+
+        /// <summary>
+        /// Ativa ou inativa os registros do lote carregando cada entidade do banco. O cliente manda so os ids,
+        /// entao nenhum outro campo do registro pode ser sobrescrito por dado velho da tela.
+        /// </summary>
+        protected async Task<IActionResult> SetActiveBulk<T>(BulkIdsRequest? request, bool isActive, CancellationToken cancellationToken, Func<T, CancellationToken, Task>? validate = null)
+            where T : Entity, IActivatable
+        {
+            if (!TryReadBulkIds(request, out IReadOnlyList<long> ids, out IActionResult? invalid))
+            {
+                return invalid!;
+            }
+
+            IBulkOperationRunner runner = HttpContext.RequestServices.GetRequiredService<IBulkOperationRunner>();
+            BulkOperationResult result = await runner.SetActiveAsync(ids, isActive, validate, cancellationToken);
+            return BulkResponse(result);
+        }
+
+        /// <summary>
+        /// Resposta padrao de lote: HTTP 200 com o resultado por registro, mesmo quando algum falha, porque a
+        /// requisicao em si foi processada. A mensagem resume o que aconteceu e cada falha vem traduzida.
+        /// </summary>
+        protected IActionResult BulkResponse(BulkOperationResult result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+
+            IStringLocalizerFactory factory = HttpContext.RequestServices.GetRequiredService<IStringLocalizerFactory>();
+            LocalizationCatalogOptions catalog = HttpContext.RequestServices.GetRequiredService<LocalizationCatalogOptions>();
+            ILogger logger = HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(GetType());
+
+            List<BulkOperationFailureContract> failures = result.Failures
+                .Select(failure =>
+                {
+                    if (!LocalizedMessageResolver.TryResolve(Localizer, factory, catalog, failure.MessageKey, failure.MessageArgs.ToArray(), out string message))
+                    {
+                        logger.LogWarning("Chave de localizacao ausente no catalogo: {Key}. O lote devolveu a mensagem generica.", failure.MessageKey);
+                        message = Localizer["error.unexpected.short"];
+                    }
+
+                    return new BulkOperationFailureContract { Id = failure.Id, Message = message };
+                })
+                .ToList();
+
+            string summary = result.Failed == 0
+                ? Localizer["bulk.result.completed", result.Succeeded]
+                : result.Succeeded == 0
+                    ? Localizer["bulk.result.failed", result.Failed]
+                    : Localizer["bulk.result.partial", result.Succeeded, result.Total, result.Failed];
+
+            return Http200(new BulkOperationResultContract
+            {
+                Total = result.Total,
+                Succeeded = result.Succeeded,
+                Failed = result.Failed,
+                SucceededIds = result.SucceededIds,
+                Failures = failures
+            }, summary);
+        }
+
+        private bool TryReadBulkIds(BulkIdsRequest? request, out IReadOnlyList<long> ids, out IActionResult? invalid)
+        {
+            ids = [];
+            invalid = null;
+
+            if (request?.Ids is null || request.Ids.Count == 0)
+            {
+                invalid = Http400(Localizer["bulk.ids.required"]);
+                return false;
+            }
+
+            if (request.Ids.Any(id => id <= 0))
+            {
+                invalid = Http400(Localizer["bulk.ids.invalid"]);
+                return false;
+            }
+
+            List<long> distinct = request.Ids.Distinct().ToList();
+            if (distinct.Count > BulkIdsRequest.MaxItems)
+            {
+                invalid = Http400(Localizer["bulk.ids.tooMany", BulkIdsRequest.MaxItems]);
+                return false;
+            }
+
+            ids = distinct;
+            return true;
         }
 
         protected IActionResult Http200(object? data = null, string? message = null)

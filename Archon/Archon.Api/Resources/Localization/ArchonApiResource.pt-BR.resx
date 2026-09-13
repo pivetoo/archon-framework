@@ -284,4 +284,22 @@
   <data name="accessCapability.auditoria.ver" xml:space="preserve"><value>Consultar a trilha de auditoria</value></data>
   <data name="accessCapability.geral.basico" xml:space="preserve"><value>Acesso básico</value></data>
   <data name="accessCapability.geral.basico.description" xml:space="preserve"><value>Notificações e dados do próprio usuário. Incluído em todos os perfis.</value></data>
+  <data name="bulk.ids.required" xml:space="preserve">
+    <value>Informe ao menos um registro.</value>
+  </data>
+  <data name="bulk.ids.invalid" xml:space="preserve">
+    <value>A lista de registros contém um identificador inválido.</value>
+  </data>
+  <data name="bulk.ids.tooMany" xml:space="preserve">
+    <value>Selecione no máximo {0} registros por vez.</value>
+  </data>
+  <data name="bulk.result.completed" xml:space="preserve">
+    <value>{0} registro(s) processado(s).</value>
+  </data>
+  <data name="bulk.result.partial" xml:space="preserve">
+    <value>{0} de {1} registro(s) processado(s). {2} com erro.</value>
+  </data>
+  <data name="bulk.result.failed" xml:space="preserve">
+    <value>Nenhum registro processado. {0} com erro.</value>
+  </data>
 </root>

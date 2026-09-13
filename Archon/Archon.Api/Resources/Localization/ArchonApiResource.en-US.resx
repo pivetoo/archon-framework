@@ -389,4 +389,22 @@
   <data name="accessCapability.auditoria.ver" xml:space="preserve"><value>View the audit trail</value></data>
   <data name="accessCapability.geral.basico" xml:space="preserve"><value>Basic access</value></data>
   <data name="accessCapability.geral.basico.description" xml:space="preserve"><value>Notifications and the user's own data. Included in every role.</value></data>
+  <data name="bulk.ids.required" xml:space="preserve">
+    <value>Provide at least one record.</value>
+  </data>
+  <data name="bulk.ids.invalid" xml:space="preserve">
+    <value>The record list contains an invalid identifier.</value>
+  </data>
+  <data name="bulk.ids.tooMany" xml:space="preserve">
+    <value>Select at most {0} records at a time.</value>
+  </data>
+  <data name="bulk.result.completed" xml:space="preserve">
+    <value>{0} record(s) processed.</value>
+  </data>
+  <data name="bulk.result.partial" xml:space="preserve">
+    <value>{0} of {1} record(s) processed. {2} failed.</value>
+  </data>
+  <data name="bulk.result.failed" xml:space="preserve">
+    <value>No records processed. {0} failed.</value>
+  </data>
 </root>
