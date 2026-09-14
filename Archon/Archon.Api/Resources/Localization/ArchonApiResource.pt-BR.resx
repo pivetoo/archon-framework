@@ -302,4 +302,90 @@
   <data name="bulk.result.failed" xml:space="preserve">
     <value>Nenhum registro processado. {0} com erro.</value>
   </data>
+  <data name="auth.oidc.invalidState" xml:space="preserve"><value>OIDC state inválido</value></data>
+  <data name="auth.oidc.missingCodeVerifier" xml:space="preserve"><value>OIDC code verifier não encontrado</value></data>
+  <data name="auth.oidc.incompleteConfig" xml:space="preserve"><value>Configuração OIDC incompleta</value></data>
+  <data name="auth.oidc.missingAccessToken" xml:space="preserve"><value>Access token não retornado pelo OIDC token endpoint</value></data>
+  <data name="auth.oidc.missingRefreshToken" xml:space="preserve"><value>Refresh token não retornado pelo OIDC token endpoint</value></data>
+  <data name="auth.oidc.invalidAccessToken" xml:space="preserve"><value>Access token OIDC inválido</value></data>
+  <data name="auth.oidc.missingIdToken" xml:space="preserve"><value>OIDC id_token ausente na resposta</value></data>
+  <data name="auth.oidc.invalidNonce" xml:space="preserve"><value>OIDC nonce inválido</value></data>
+  <data name="auth.oidc.completeLoginFailed" xml:space="preserve"><value>Não foi possível completar o login pelo Identity Management.</value></data>
+  <data name="auth.oidc.completeLoginInvalidResponse" xml:space="preserve"><value>Resposta inválida ao completar o login pelo Identity Management.</value></data>
+  <data name="usersManagement.error.createUser" xml:space="preserve"><value>Falha ao criar usuário</value></data>
+  <data name="usersManagement.error.updateRole" xml:space="preserve"><value>Falha ao atualizar perfil</value></data>
+  <data name="usersManagement.error.updateUser" xml:space="preserve"><value>Falha ao atualizar usuário</value></data>
+  <data name="usersManagement.error.roleNotFound" xml:space="preserve"><value>Perfil não encontrado</value></data>
+  <data name="usersManagement.error.createRole" xml:space="preserve"><value>Falha ao criar perfil</value></data>
+  <data name="nav.dashboard" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="nav.settings" xml:space="preserve"><value>Configurações</value></data>
+  <data name="common.table.rowActions" xml:space="preserve"><value>Ações</value></data>
+  <data name="common.table.bulkActions" xml:space="preserve"><value>Ações em lote</value></data>
+  <data name="common.table.selected" xml:space="preserve"><value>selecionado(s)</value></data>
+  <data name="common.table.clearSelection" xml:space="preserve"><value>Limpar seleção</value></data>
+  <data name="common.table.selectAll" xml:space="preserve"><value>Selecionar todos</value></data>
+  <data name="common.table.selectRow" xml:space="preserve"><value>Selecionar registro</value></data>
+  <data name="common.action.openDetails" xml:space="preserve"><value>Abrir detalhes</value></data>
+  <data name="common.table.firstPage" xml:space="preserve"><value>Primeira página</value></data>
+  <data name="common.table.previousPage" xml:space="preserve"><value>Página anterior</value></data>
+  <data name="common.table.nextPage" xml:space="preserve"><value>Próxima página</value></data>
+  <data name="common.table.lastPage" xml:space="preserve"><value>Última página</value></data>
+  <data name="common.table.pageRange" xml:space="preserve"><value>{0}–{1} de {2}</value></data>
+  <data name="pageLayout.action.more" xml:space="preserve"><value>Ações</value></data>
+  <data name="common.action.close" xml:space="preserve"><value>Fechar</value></data>
+  <data name="common.action.clearFilters" xml:space="preserve"><value>Limpar filtros</value></data>
+  <data name="table.filter.title" xml:space="preserve"><value>Filtros</value></data>
+  <data name="common.action.clearAll" xml:space="preserve"><value>Limpar tudo</value></data>
+  <data name="common.filter.all" xml:space="preserve"><value>Todos</value></data>
+  <data name="commandPalette.placeholder" xml:space="preserve"><value>Buscar telas…</value></data>
+  <data name="commandPalette.empty" xml:space="preserve"><value>Nada encontrado</value></data>
+  <data name="commandPalette.hint.navigate" xml:space="preserve"><value>navegar</value></data>
+  <data name="commandPalette.hint.open" xml:space="preserve"><value>abrir</value></data>
+  <data name="common.nav.breadcrumb" xml:space="preserve"><value>Trilha de navegação</value></data>
+  <data name="searchableSelect.searching" xml:space="preserve"><value>Buscando...</value></data>
+  <data name="common.action.saving" xml:space="preserve"><value>Salvando...</value></data>
+  <data name="profile.title" xml:space="preserve"><value>Meu perfil</value></data>
+  <data name="profile.description" xml:space="preserve"><value>Suas informações pessoais e de segurança.</value></data>
+  <data name="profile.action.editProfile" xml:space="preserve"><value>Editar perfil</value></data>
+  <data name="profile.action.cancelEdit" xml:space="preserve"><value>Cancelar edição</value></data>
+  <data name="profile.action.saveProfile" xml:space="preserve"><value>Salvar perfil</value></data>
+  <data name="profile.action.changePassword" xml:space="preserve"><value>Alterar senha</value></data>
+  <data name="profile.action.manageSessions" xml:space="preserve"><value>Gerenciar sessões</value></data>
+  <data name="profile.action.removePhoto" xml:space="preserve"><value>Remover foto</value></data>
+  <data name="profile.section.identity" xml:space="preserve"><value>Dados pessoais</value></data>
+  <data name="profile.section.preferences" xml:space="preserve"><value>Preferências</value></data>
+  <data name="profile.section.security" xml:space="preserve"><value>Segurança</value></data>
+  <data name="profile.field.name" xml:space="preserve"><value>Nome</value></data>
+  <data name="profile.field.username" xml:space="preserve"><value>Usuário</value></data>
+  <data name="profile.field.email" xml:space="preserve"><value>E-mail</value></data>
+  <data name="profile.field.role" xml:space="preserve"><value>Perfil</value></data>
+  <data name="profile.field.lastLogin" xml:space="preserve"><value>Último acesso</value></data>
+  <data name="profile.field.avatarUrl" xml:space="preserve"><value>URL da foto</value></data>
+  <data name="profile.field.preferredLanguage" xml:space="preserve"><value>Idioma preferido</value></data>
+  <data name="profile.placeholder.name" xml:space="preserve"><value>Seu nome completo</value></data>
+  <data name="profile.placeholder.avatarUrl" xml:space="preserve"><value>https://exemplo.com/foto.jpg</value></data>
+  <data name="profile.placeholder.preferredLanguage" xml:space="preserve"><value>pt-BR</value></data>
+  <data name="profile.value.notAvailable" xml:space="preserve"><value>Não disponível</value></data>
+  <data name="profile.value.notDefined" xml:space="preserve"><value>Não definido</value></data>
+  <data name="profile.password.current" xml:space="preserve"><value>Senha atual</value></data>
+  <data name="profile.password.new" xml:space="preserve"><value>Nova senha</value></data>
+  <data name="profile.password.confirm" xml:space="preserve"><value>Confirmar nova senha</value></data>
+  <data name="profile.password.placeholder.current" xml:space="preserve"><value>••••••••</value></data>
+  <data name="profile.password.placeholder.new" xml:space="preserve"><value>••••••••</value></data>
+  <data name="profile.password.placeholder.confirm" xml:space="preserve"><value>••••••••</value></data>
+  <data name="profile.password.modalTitle" xml:space="preserve"><value>Alterar senha</value></data>
+  <data name="profile.password.modalDescription" xml:space="preserve"><value>Escolha uma nova senha para sua conta.</value></data>
+  <data name="profile.password.validation.confirmMismatch" xml:space="preserve"><value>As senhas não conferem.</value></data>
+  <data name="profile.password.validation.minLength" xml:space="preserve"><value>A senha deve ter no mínimo 6 caracteres.</value></data>
+  <data name="profile.security.changePasswordTitle" xml:space="preserve"><value>Senha</value></data>
+  <data name="profile.security.changePasswordDescription" xml:space="preserve"><value>Altere a senha da sua conta.</value></data>
+  <data name="profile.security.sessionsTitle" xml:space="preserve"><value>Sessões ativas</value></data>
+  <data name="profile.security.sessionsDescription" xml:space="preserve"><value>Veja e encerre sessões abertas em outros dispositivos.</value></data>
+  <data name="profile.toast.saveSuccessTitle" xml:space="preserve"><value>Perfil atualizado</value></data>
+  <data name="profile.toast.saveSuccessDescription" xml:space="preserve"><value>Suas informações foram salvas com sucesso.</value></data>
+  <data name="profile.toast.saveErrorDescription" xml:space="preserve"><value>Erro ao salvar perfil.</value></data>
+  <data name="profile.toast.passwordSuccessTitle" xml:space="preserve"><value>Senha alterada</value></data>
+  <data name="profile.toast.passwordSuccessDescription" xml:space="preserve"><value>Sua senha foi alterada com sucesso.</value></data>
+  <data name="profile.toast.passwordErrorDescription" xml:space="preserve"><value>Erro ao alterar senha.</value></data>
+  <data name="profile.toast.errorTitle" xml:space="preserve"><value>Erro</value></data>
 </root>
