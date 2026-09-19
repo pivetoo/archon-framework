@@ -302,4 +302,211 @@
   <data name="bulk.result.failed" xml:space="preserve">
     <value>Ningún registro procesado. {0} con error.</value>
   </data>
+  <data name="auth.oidc.invalidState" xml:space="preserve"><value>Estado OIDC inválido</value></data>
+  <data name="auth.oidc.missingCodeVerifier" xml:space="preserve"><value>No se encontró el code verifier de OIDC</value></data>
+  <data name="auth.oidc.incompleteConfig" xml:space="preserve"><value>Configuración OIDC incompleta</value></data>
+  <data name="auth.oidc.missingAccessToken" xml:space="preserve"><value>El endpoint de token de OIDC no devolvió el access token</value></data>
+  <data name="auth.oidc.missingRefreshToken" xml:space="preserve"><value>El endpoint de token de OIDC no devolvió el refresh token</value></data>
+  <data name="auth.oidc.invalidAccessToken" xml:space="preserve"><value>Access token de OIDC inválido</value></data>
+  <data name="auth.oidc.missingIdToken" xml:space="preserve"><value>Falta el id_token de OIDC en la respuesta</value></data>
+  <data name="auth.oidc.invalidNonce" xml:space="preserve"><value>Nonce de OIDC inválido</value></data>
+  <data name="auth.oidc.completeLoginFailed" xml:space="preserve"><value>No se pudo completar el inicio de sesión por Identity Management.</value></data>
+  <data name="auth.oidc.completeLoginInvalidResponse" xml:space="preserve"><value>Respuesta inválida al completar el inicio de sesión por Identity Management.</value></data>
+  <data name="usersManagement.error.createUser" xml:space="preserve"><value>Error al crear el usuario</value></data>
+  <data name="usersManagement.error.updateRole" xml:space="preserve"><value>Error al actualizar el perfil</value></data>
+  <data name="usersManagement.error.updateUser" xml:space="preserve"><value>Error al actualizar el usuario</value></data>
+  <data name="usersManagement.error.roleNotFound" xml:space="preserve"><value>Perfil no encontrado</value></data>
+  <data name="usersManagement.error.createRole" xml:space="preserve"><value>Error al crear el perfil</value></data>
+  <data name="nav.dashboard" xml:space="preserve"><value>Panel</value></data>
+  <data name="nav.settings" xml:space="preserve"><value>Configuración</value></data>
+  <data name="common.table.rowActions" xml:space="preserve"><value>Acciones</value></data>
+  <data name="common.table.bulkActions" xml:space="preserve"><value>Acciones en lote</value></data>
+  <data name="common.table.selected" xml:space="preserve"><value>seleccionado(s)</value></data>
+  <data name="common.table.clearSelection" xml:space="preserve"><value>Limpiar selección</value></data>
+  <data name="common.table.selectAll" xml:space="preserve"><value>Seleccionar todos</value></data>
+  <data name="common.table.selectRow" xml:space="preserve"><value>Seleccionar registro</value></data>
+  <data name="common.action.openDetails" xml:space="preserve"><value>Abrir detalles</value></data>
+  <data name="common.table.firstPage" xml:space="preserve"><value>Primera página</value></data>
+  <data name="common.table.previousPage" xml:space="preserve"><value>Página anterior</value></data>
+  <data name="common.table.nextPage" xml:space="preserve"><value>Página siguiente</value></data>
+  <data name="common.table.lastPage" xml:space="preserve"><value>Última página</value></data>
+  <data name="common.table.pageRange" xml:space="preserve"><value>{0}–{1} de {2}</value></data>
+  <data name="pageLayout.action.more" xml:space="preserve"><value>Acciones</value></data>
+  <data name="common.action.close" xml:space="preserve"><value>Cerrar</value></data>
+  <data name="common.action.clearFilters" xml:space="preserve"><value>Limpiar filtros</value></data>
+  <data name="table.filter.title" xml:space="preserve"><value>Filtros</value></data>
+  <data name="common.action.clearAll" xml:space="preserve"><value>Limpiar todo</value></data>
+  <data name="common.filter.all" xml:space="preserve"><value>Todos</value></data>
+  <data name="commandPalette.placeholder" xml:space="preserve"><value>Buscar pantallas…</value></data>
+  <data name="commandPalette.empty" xml:space="preserve"><value>No se encontró nada</value></data>
+  <data name="commandPalette.hint.navigate" xml:space="preserve"><value>navegar</value></data>
+  <data name="commandPalette.hint.open" xml:space="preserve"><value>abrir</value></data>
+  <data name="common.nav.breadcrumb" xml:space="preserve"><value>Ruta de navegación</value></data>
+  <data name="searchableSelect.searching" xml:space="preserve"><value>Buscando...</value></data>
+  <data name="common.action.saving" xml:space="preserve"><value>Guardando...</value></data>
+  <data name="profile.title" xml:space="preserve"><value>Mi perfil</value></data>
+  <data name="profile.description" xml:space="preserve"><value>Tu información personal y de seguridad.</value></data>
+  <data name="profile.action.editProfile" xml:space="preserve"><value>Editar perfil</value></data>
+  <data name="profile.action.cancelEdit" xml:space="preserve"><value>Cancelar edición</value></data>
+  <data name="profile.action.saveProfile" xml:space="preserve"><value>Guardar perfil</value></data>
+  <data name="profile.action.changePassword" xml:space="preserve"><value>Cambiar contraseña</value></data>
+  <data name="profile.action.manageSessions" xml:space="preserve"><value>Gestionar sesiones</value></data>
+  <data name="profile.action.removePhoto" xml:space="preserve"><value>Quitar foto</value></data>
+  <data name="profile.section.identity" xml:space="preserve"><value>Datos personales</value></data>
+  <data name="profile.section.preferences" xml:space="preserve"><value>Preferencias</value></data>
+  <data name="profile.section.security" xml:space="preserve"><value>Seguridad</value></data>
+  <data name="profile.field.name" xml:space="preserve"><value>Nombre</value></data>
+  <data name="profile.field.username" xml:space="preserve"><value>Usuario</value></data>
+  <data name="profile.field.email" xml:space="preserve"><value>Correo electrónico</value></data>
+  <data name="profile.field.role" xml:space="preserve"><value>Perfil</value></data>
+  <data name="profile.field.lastLogin" xml:space="preserve"><value>Último acceso</value></data>
+  <data name="profile.field.avatarUrl" xml:space="preserve"><value>URL de la foto</value></data>
+  <data name="profile.field.preferredLanguage" xml:space="preserve"><value>Idioma preferido</value></data>
+  <data name="profile.placeholder.name" xml:space="preserve"><value>Tu nombre completo</value></data>
+  <data name="profile.placeholder.avatarUrl" xml:space="preserve"><value>https://ejemplo.com/foto.jpg</value></data>
+  <data name="profile.placeholder.preferredLanguage" xml:space="preserve"><value>es-AR</value></data>
+  <data name="profile.value.notAvailable" xml:space="preserve"><value>No disponible</value></data>
+  <data name="profile.value.notDefined" xml:space="preserve"><value>No definido</value></data>
+  <data name="profile.password.current" xml:space="preserve"><value>Contraseña actual</value></data>
+  <data name="profile.password.new" xml:space="preserve"><value>Nueva contraseña</value></data>
+  <data name="profile.password.confirm" xml:space="preserve"><value>Confirmar nueva contraseña</value></data>
+  <data name="profile.password.placeholder.current" xml:space="preserve"><value>••••••••</value></data>
+  <data name="profile.password.placeholder.new" xml:space="preserve"><value>••••••••</value></data>
+  <data name="profile.password.placeholder.confirm" xml:space="preserve"><value>••••••••</value></data>
+  <data name="profile.password.modalTitle" xml:space="preserve"><value>Cambiar contraseña</value></data>
+  <data name="profile.password.modalDescription" xml:space="preserve"><value>Elegí una nueva contraseña para tu cuenta.</value></data>
+  <data name="profile.password.validation.confirmMismatch" xml:space="preserve"><value>Las contraseñas no coinciden.</value></data>
+  <data name="profile.password.validation.minLength" xml:space="preserve"><value>La contraseña debe tener al menos 6 caracteres.</value></data>
+  <data name="profile.security.changePasswordTitle" xml:space="preserve"><value>Contraseña</value></data>
+  <data name="profile.security.changePasswordDescription" xml:space="preserve"><value>Cambiá la contraseña de tu cuenta.</value></data>
+  <data name="profile.security.sessionsTitle" xml:space="preserve"><value>Sesiones activas</value></data>
+  <data name="profile.security.sessionsDescription" xml:space="preserve"><value>Mirá y cerrá sesiones abiertas en otros dispositivos.</value></data>
+  <data name="profile.toast.saveSuccessTitle" xml:space="preserve"><value>Perfil actualizado</value></data>
+  <data name="profile.toast.saveSuccessDescription" xml:space="preserve"><value>Tu información se guardó correctamente.</value></data>
+  <data name="profile.toast.saveErrorDescription" xml:space="preserve"><value>Error al guardar el perfil.</value></data>
+  <data name="profile.toast.passwordSuccessTitle" xml:space="preserve"><value>Contraseña actualizada</value></data>
+  <data name="profile.toast.passwordSuccessDescription" xml:space="preserve"><value>Tu contraseña se cambió correctamente.</value></data>
+  <data name="profile.toast.passwordErrorDescription" xml:space="preserve"><value>Error al cambiar la contraseña.</value></data>
+  <data name="profile.toast.errorTitle" xml:space="preserve"><value>Error</value></data>
+  <data name="common.action.save" xml:space="preserve"><value>Guardar</value></data>
+  <data name="common.action.delete" xml:space="preserve"><value>Eliminar</value></data>
+  <data name="common.loading" xml:space="preserve"><value>Cargando…</value></data>
+  <data name="common.error.retry" xml:space="preserve"><value>Intentá de nuevo.</value></data>
+  <data name="common.error.retryShortly" xml:space="preserve"><value>Intentá de nuevo en unos instantes.</value></data>
+  <data name="common.error.checkDataAndRetry" xml:space="preserve"><value>Revisá los datos e intentá de nuevo.</value></data>
+  <data name="common.field.name" xml:space="preserve"><value>Nombre</value></data>
+  <data name="common.field.description" xml:space="preserve"><value>Descripción</value></data>
+  <data name="common.field.email" xml:space="preserve"><value>Correo electrónico</value></data>
+  <data name="common.field.status" xml:space="preserve"><value>Estado</value></data>
+  <data name="common.field.type" xml:space="preserve"><value>Tipo</value></data>
+  <data name="common.status.active" xml:space="preserve"><value>Activo</value></data>
+  <data name="common.status.inactive" xml:space="preserve"><value>Inactivo</value></data>
+  <data name="common.status.yes" xml:space="preserve"><value>Sí</value></data>
+  <data name="common.status.none" xml:space="preserve"><value>Ninguna</value></data>
+  <data name="common.method.get" xml:space="preserve"><value>Consultar</value></data>
+  <data name="common.method.post" xml:space="preserve"><value>Crear</value></data>
+  <data name="common.method.put" xml:space="preserve"><value>Editar</value></data>
+  <data name="common.method.patch" xml:space="preserve"><value>Ajustar</value></data>
+  <data name="common.method.delete" xml:space="preserve"><value>Eliminar</value></data>
+  <data name="common.method.other" xml:space="preserve"><value>Otro</value></data>
+  <data name="usersManagement.role.toast.loadErrorTitle" xml:space="preserve"><value>Error al cargar el perfil</value></data>
+  <data name="usersManagement.role.validation.nameRequiredTitle" xml:space="preserve"><value>Nombre obligatorio</value></data>
+  <data name="usersManagement.role.validation.nameRequiredDescription" xml:space="preserve"><value>Indicá un nombre para el perfil.</value></data>
+  <data name="usersManagement.role.toast.updatedTitle" xml:space="preserve"><value>Perfil actualizado</value></data>
+  <data name="usersManagement.role.toast.createdTitle" xml:space="preserve"><value>Perfil creado</value></data>
+  <data name="usersManagement.role.toast.updateErrorTitle" xml:space="preserve"><value>Error al actualizar el perfil</value></data>
+  <data name="usersManagement.role.toast.createErrorTitle" xml:space="preserve"><value>Error al crear el perfil</value></data>
+  <data name="usersManagement.role.matrix.title" xml:space="preserve"><value>Qué puede hacer este perfil</value></data>
+  <data name="usersManagement.role.matrix.description" xml:space="preserve"><value>Marcá por módulo. Cada opción ya habilita todas las pantallas y acciones correspondientes.</value></data>
+  <data name="usersManagement.role.matrix.selectedCount" xml:space="preserve"><value>{0} de {1} marcadas</value></data>
+  <data name="usersManagement.role.matrix.selectModule" xml:space="preserve"><value>Todo el módulo</value></data>
+  <data name="usersManagement.role.matrix.alwaysIncluded" xml:space="preserve"><value>Siempre incluido</value></data>
+  <data name="usersManagement.role.legacy.title" xml:space="preserve"><value>Permisos de este perfil</value></data>
+  <data name="usersManagement.role.legacy.selectedCount" xml:space="preserve"><value>{0} de {1} permisos seleccionados.</value></data>
+  <data name="usersManagement.role.legacy.selectButton" xml:space="preserve"><value>Seleccionar permisos</value></data>
+  <data name="usersManagement.role.modal.editTitle" xml:space="preserve"><value>Editar perfil</value></data>
+  <data name="usersManagement.role.modal.newTitle" xml:space="preserve"><value>Nuevo perfil</value></data>
+  <data name="usersManagement.role.modal.description" xml:space="preserve"><value>Definí el nombre, la descripción y los permisos de este perfil.</value></data>
+  <data name="usersManagement.role.field.namePlaceholder" xml:space="preserve"><value>Ej: Comercial</value></data>
+  <data name="usersManagement.role.field.descriptionPlaceholder" xml:space="preserve"><value>Pipeline y propuestas</value></data>
+  <data name="usersManagement.role.field.isRoot" xml:space="preserve"><value>Acceso total al sistema</value></data>
+  <data name="usersManagement.role.field.isDefault" xml:space="preserve"><value>Perfil predeterminado</value></data>
+  <data name="usersManagement.role.field.permissions" xml:space="preserve"><value>Permisos</value></data>
+  <data name="usersManagement.role.rootNotice" xml:space="preserve"><value>Los perfiles con acceso total no necesitan permisos específicos — pueden hacer todo en el sistema.</value></data>
+  <data name="usersManagement.role.action.create" xml:space="preserve"><value>Crear perfil</value></data>
+  <data name="usersManagement.picker.title" xml:space="preserve"><value>Seleccionar permisos</value></data>
+  <data name="usersManagement.picker.availableTitle" xml:space="preserve"><value>Permisos disponibles</value></data>
+  <data name="usersManagement.picker.description" xml:space="preserve"><value>Marcá lo que este perfil puede hacer. Los cambios afectan a todos los usuarios asignados.</value></data>
+  <data name="usersManagement.picker.selectedCount" xml:space="preserve"><value>{0} de {1} seleccionados</value></data>
+  <data name="usersManagement.picker.selectAll" xml:space="preserve"><value>Marcar todo</value></data>
+  <data name="usersManagement.picker.clearAll" xml:space="preserve"><value>Limpiar</value></data>
+  <data name="usersManagement.picker.expandAll" xml:space="preserve"><value>Expandir todo</value></data>
+  <data name="usersManagement.picker.collapseAll" xml:space="preserve"><value>Colapsar todo</value></data>
+  <data name="usersManagement.picker.searchLabel" xml:space="preserve"><value>Buscar permiso</value></data>
+  <data name="usersManagement.picker.searchPlaceholder" xml:space="preserve"><value>Filtrar permisos…</value></data>
+  <data name="usersManagement.picker.empty.title" xml:space="preserve"><value>No se encontraron permisos</value></data>
+  <data name="usersManagement.picker.empty.description" xml:space="preserve"><value>Ajustá la búsqueda o esperá a que se sincronicen los permisos del sistema.</value></data>
+  <data name="usersManagement.picker.selectGroup" xml:space="preserve"><value>Marcar grupo</value></data>
+  <data name="usersManagement.picker.apply" xml:space="preserve"><value>Aplicar permisos</value></data>
+  <data name="usersManagement.page.title" xml:space="preserve"><value>Control de Acceso</value></data>
+  <data name="usersManagement.page.subtitle" xml:space="preserve"><value>Gestioná usuarios y perfiles del contrato activo</value></data>
+  <data name="usersManagement.page.toast.loadErrorTitle" xml:space="preserve"><value>Error al cargar los datos</value></data>
+  <data name="usersManagement.page.restricted.title" xml:space="preserve"><value>Acceso restringido</value></data>
+  <data name="usersManagement.page.restricted.description" xml:space="preserve"><value>Solo los administradores del contrato pueden gestionar el control de acceso.</value></data>
+  <data name="usersManagement.field.username" xml:space="preserve"><value>Usuario</value></data>
+  <data name="usersManagement.field.role" xml:space="preserve"><value>Perfil</value></data>
+  <data name="usersManagement.field.lastLogin" xml:space="preserve"><value>Último acceso</value></data>
+  <data name="usersManagement.badge.fullAccess" xml:space="preserve"><value>Acceso total</value></data>
+  <data name="usersManagement.badge.restricted" xml:space="preserve"><value>Restringido</value></data>
+  <data name="usersManagement.value.all" xml:space="preserve"><value>Todo</value></data>
+  <data name="usersManagement.value.moduleCount" xml:space="preserve"><value>{0} módulo(s)</value></data>
+  <data name="usersManagement.value.actionCount" xml:space="preserve"><value>{0} acción(es)</value></data>
+  <data name="usersManagement.field.isDefaultColumn" xml:space="preserve"><value>Predeterminado</value></data>
+  <data name="usersManagement.field.userCount" xml:space="preserve"><value>Usuarios</value></data>
+  <data name="usersManagement.page.toast.selectUserTitle" xml:space="preserve"><value>Seleccioná un usuario</value></data>
+  <data name="usersManagement.page.toast.selectUserEditDescription" xml:space="preserve"><value>Marcá la fila del usuario que querés editar.</value></data>
+  <data name="usersManagement.page.toast.selectRoleTitle" xml:space="preserve"><value>Seleccioná un perfil</value></data>
+  <data name="usersManagement.page.toast.selectRoleEditDescription" xml:space="preserve"><value>Marcá la fila del perfil que querés editar.</value></data>
+  <data name="usersManagement.page.toast.selectRoleDuplicateDescription" xml:space="preserve"><value>Marcá la fila del perfil que querés duplicar.</value></data>
+  <data name="usersManagement.page.toast.selectRoleDeleteDescription" xml:space="preserve"><value>Marcá la fila del perfil que querés eliminar.</value></data>
+  <data name="usersManagement.page.action.duplicateRole" xml:space="preserve"><value>Duplicar perfil</value></data>
+  <data name="usersManagement.page.duplicateSuffix" xml:space="preserve"><value> (copia)</value></data>
+  <data name="usersManagement.page.toast.duplicateErrorTitle" xml:space="preserve"><value>No se pudo duplicar</value></data>
+  <data name="usersManagement.page.toast.roleHasUsersTitle" xml:space="preserve"><value>El perfil tiene usuarios asignados</value></data>
+  <data name="usersManagement.page.toast.roleHasUsersDescription" xml:space="preserve"><value>Hay {0} usuario(s) usando este perfil. Reasignalos antes de eliminarlo.</value></data>
+  <data name="usersManagement.page.toast.roleDeletedTitle" xml:space="preserve"><value>Perfil eliminado</value></data>
+  <data name="usersManagement.page.toast.deleteErrorTitle" xml:space="preserve"><value>No se pudo eliminar</value></data>
+  <data name="usersManagement.tab.users" xml:space="preserve"><value>Usuarios</value></data>
+  <data name="usersManagement.tab.roles" xml:space="preserve"><value>Perfiles</value></data>
+  <data name="usersManagement.page.usersEmpty" xml:space="preserve"><value>Ningún usuario asignado a este contrato.</value></data>
+  <data name="usersManagement.page.rolesEmpty" xml:space="preserve"><value>Ningún perfil registrado en este contrato.</value></data>
+  <data name="usersManagement.page.userModal.editTitle" xml:space="preserve"><value>Editar usuario</value></data>
+  <data name="usersManagement.page.userModal.newTitle" xml:space="preserve"><value>Nuevo usuario</value></data>
+  <data name="usersManagement.page.userModal.editDescription" xml:space="preserve"><value>El usuario y el correo no son editables.</value></data>
+  <data name="usersManagement.page.userModal.newDescription" xml:space="preserve"><value>El usuario se creará y quedará vinculado automáticamente al contrato activo.</value></data>
+  <data name="usersManagement.page.field.fullName" xml:space="preserve"><value>Nombre completo</value></data>
+  <data name="usersManagement.page.field.fullNamePlaceholder" xml:space="preserve"><value>María Pérez</value></data>
+  <data name="usersManagement.page.field.usernameLabel" xml:space="preserve"><value>Usuario</value></data>
+  <data name="usersManagement.page.field.usernamePlaceholder" xml:space="preserve"><value>maria.perez</value></data>
+  <data name="usersManagement.page.field.emailPlaceholder" xml:space="preserve"><value>maria@empresa.com</value></data>
+  <data name="usersManagement.page.field.passwordOptional" xml:space="preserve"><value>Nueva contraseña (opcional)</value></data>
+  <data name="usersManagement.page.field.password" xml:space="preserve"><value>Contraseña</value></data>
+  <data name="usersManagement.page.field.passwordKeepPlaceholder" xml:space="preserve"><value>Dejá en blanco para mantenerla</value></data>
+  <data name="usersManagement.page.field.passwordMinPlaceholder" xml:space="preserve"><value>Mínimo 6 caracteres</value></data>
+  <data name="usersManagement.page.field.rolePlaceholder" xml:space="preserve"><value>Seleccioná un perfil</value></data>
+  <data name="usersManagement.page.field.userActive" xml:space="preserve"><value>Usuario activo</value></data>
+  <data name="usersManagement.page.action.createUser" xml:space="preserve"><value>Crear usuario</value></data>
+  <data name="usersManagement.page.confirmDelete.title" xml:space="preserve"><value>Eliminar perfil</value></data>
+  <data name="usersManagement.page.confirmDelete.description" xml:space="preserve"><value>¿Confirmás la eliminación del perfil "{0}"? Esta acción no se puede deshacer.</value></data>
+  <data name="usersManagement.page.toast.userUpdatedTitle" xml:space="preserve"><value>Usuario actualizado</value></data>
+  <data name="usersManagement.page.toast.userUpdateErrorTitle" xml:space="preserve"><value>No se pudo actualizar el usuario</value></data>
+  <data name="usersManagement.page.validation.editRequiredTitle" xml:space="preserve"><value>Completá los campos obligatorios</value></data>
+  <data name="usersManagement.page.validation.editRequiredDescription" xml:space="preserve"><value>El nombre y el perfil son obligatorios.</value></data>
+  <data name="usersManagement.page.validation.createRequiredTitle" xml:space="preserve"><value>Completá todos los campos</value></data>
+  <data name="usersManagement.page.validation.createRequiredDescription" xml:space="preserve"><value>Usuario, correo, nombre, contraseña y perfil son obligatorios.</value></data>
+  <data name="usersManagement.page.toast.userCreatedTitle" xml:space="preserve"><value>Usuario creado</value></data>
+  <data name="usersManagement.page.toast.userCreatedDescription" xml:space="preserve"><value>El usuario ya tiene acceso al contrato activo.</value></data>
+  <data name="usersManagement.page.toast.userCreateErrorTitle" xml:space="preserve"><value>No se pudo crear el usuario</value></data>
+  <data name="nav.search.placeholder" xml:space="preserve"><value>Buscar…</value></data>
+  <data name="nav.search.hotkey" xml:space="preserve"><value>Espacio</value></data>
 </root>
