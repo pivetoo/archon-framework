@@ -507,4 +507,6 @@
   <data name="usersManagement.page.toast.userCreatedTitle" xml:space="preserve"><value>Usuario creado</value></data>
   <data name="usersManagement.page.toast.userCreatedDescription" xml:space="preserve"><value>El usuario ya tiene acceso al contrato activo.</value></data>
   <data name="usersManagement.page.toast.userCreateErrorTitle" xml:space="preserve"><value>No se pudo crear el usuario</value></data>
+  <data name="nav.search.placeholder" xml:space="preserve"><value>Buscar…</value></data>
+  <data name="nav.search.hotkey" xml:space="preserve"><value>Espacio</value></data>
 </root>

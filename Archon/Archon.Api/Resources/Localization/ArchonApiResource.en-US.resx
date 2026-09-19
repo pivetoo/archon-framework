@@ -612,4 +612,6 @@
   <data name="usersManagement.page.toast.userCreatedTitle" xml:space="preserve"><value>User created</value></data>
   <data name="usersManagement.page.toast.userCreatedDescription" xml:space="preserve"><value>The user already has access to the active contract.</value></data>
   <data name="usersManagement.page.toast.userCreateErrorTitle" xml:space="preserve"><value>Could not create the user</value></data>
+    <data name="nav.search.placeholder" xml:space="preserve"><value>Search…</value></data>
+    <data name="nav.search.hotkey" xml:space="preserve"><value>Space</value></data>
 </root>
